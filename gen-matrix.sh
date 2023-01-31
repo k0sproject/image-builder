@@ -1,6 +1,4 @@
-#!/bin/bash
-
-
+#!/usr/bin/env bash
 
 MATRIX_OUTPUT="["
 COMMA=""

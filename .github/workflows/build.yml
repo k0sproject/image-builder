@@ -2,25 +2,23 @@ name: Build
 on:
   push:
     branches:
-      - master
-    tags:
-      - 'v*'
+      - main
 jobs:
   prepare:
     name: Generate matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.3.0
       - id: set-matrix
         run: |
           matrix=$(./gen-matrix.sh)
           echo matrix="$matrix" >> $GITHUB_OUTPUT
 
   images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - prepare
     strategy:
@@ -34,7 +32,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ matrix.image_tag }}
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.3.0
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -54,7 +52,7 @@ jobs:
           registry: quay.io
 
       - name: Build agent
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ steps.imagepath.outputs.value }}
@@ -63,7 +61,7 @@ jobs:
           tags: quay.io/k0sproject/${{ matrix.image_tag }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.8.0
         with:
           image-ref: quay.io/k0sproject/${{ matrix.image_tag }}
           ignore-unfixed: true
