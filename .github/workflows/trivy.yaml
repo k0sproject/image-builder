@@ -1,0 +1,51 @@
+name: Code scanning
+on:
+  pull_request:
+  schedule:
+    - cron: '0 2 * * 1-5'
+
+jobs:
+  prepare:
+    name: Generate matrix
+    runs-on: ubuntu-22.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3.3.0
+      - id: set-matrix
+        run: |
+          matrix=$(./gen-matrix.sh)
+          echo matrix="$matrix" >> $GITHUB_OUTPUT
+
+  scan:
+    name: Scan
+    needs:
+      - prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        image_tag: ${{fromJson(needs.prepare.outputs.matrix)}}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Determine image path
+        id: imagepath
+        run: echo "value=./images/${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
+        env:
+          IMAGE_TAG: ${{ matrix.image_tag }}
+      - name: Checkout code
+        uses: actions/checkout@v3.3.0
+      - name: Build an image from Dockerfile
+        run: |
+          docker build -t quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }} ${{ steps.imagepath.outputs.value }}
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.8.0
+        with:
+          image-ref: 'quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }}'
+          format: 'table'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          # Disabling exit code for now, as we have some vulnerabilities that we need to fix
+          #exit-code: '1'
+          # Disable to scan all vulnerabilities. If it will be annoying, we can set the severity level.
+          #severity: 'CRITICAL,HIGH'
