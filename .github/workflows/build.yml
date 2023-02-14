@@ -51,12 +51,20 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
           registry: quay.io
 
+      - id: set-arch
+        run: |
+          if [[ "${{ matrix.image_tag }}" =~ ^envoy.* ]]; then
+            echo "archs=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+          else
+            echo "archs=linux/amd64,linux/arm64,linux/arm/v7" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build agent
         uses: docker/build-push-action@v4
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ steps.imagepath.outputs.value }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: ${{ steps.set-arch.outputs.archs }}
           push: true
           tags: quay.io/k0sproject/${{ matrix.image_tag }}
 
