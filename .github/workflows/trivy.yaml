@@ -10,9 +10,13 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+      changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3.3.0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
       - id: set-matrix
         run: |
           matrix=$(./gen-matrix.sh)
@@ -30,15 +34,20 @@ jobs:
     steps:
       - name: Determine image path
         id: imagepath
-        run: echo "value=./images/${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
+        run: |
+          echo "base=${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
+          echo "value=./images/${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
         env:
           IMAGE_TAG: ${{ matrix.image_tag }}
       - name: Checkout code
+        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         uses: actions/checkout@v3.3.0
       - name: Build an image from Dockerfile
+        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         run: |
           docker build -t quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }} ${{ steps.imagepath.outputs.value }}
       - name: Run Trivy vulnerability scanner
+        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         uses: aquasecurity/trivy-action@0.8.0
         with:
           image-ref: 'quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }}'
