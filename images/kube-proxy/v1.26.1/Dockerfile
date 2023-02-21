@@ -31,7 +31,7 @@ COPY clean-distroless.sh /
 COPY --from=build /opt/stage /
 COPY --from=binary /usr/local/bin/kube-proxy /usr/local/bin/kube-proxy
 
-RUN echo "" >  /usr/sbin/iptables && /iptables-wrapper-installer.sh && /clean-distroless.sh
+RUN echo "" >  /usr/sbin/iptables && /iptables-wrapper-installer.sh --no-sanity-check && /clean-distroless.sh
 
 ENTRYPOINT ["/usr/local/bin/kube-proxy"]
 
