@@ -12,14 +12,15 @@ RUN mkdir -p /opt/stage && \
     ipset       \
     iptables    \
     kmod && \
-    /stage-binary-and-deps.sh /opt/stage /bin/sh \
+    /stage-binary-and-deps.sh /opt/stage /bin/dash \
     /bin/cat \
     /bin/chmod \
     /bin/grep \
     /bin/ln  \
     /bin/rm \
     /bin/sleep \
-    /usr/bin/wc
+    /usr/bin/wc && \
+    ln -sf /bin/dash /opt/stage/bin/sh
 
 RUN ls -la /opt/stage/usr/sbin
 
