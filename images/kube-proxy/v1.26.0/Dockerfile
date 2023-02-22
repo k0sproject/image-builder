@@ -2,9 +2,9 @@ FROM registry.k8s.io/kube-proxy:v1.26.0 as binary
 
 FROM debian:bullseye-slim as build
 
-COPY package-utils.sh /
-COPY stage-binaries-from-package.sh /
-COPY stage-binary-and-deps.sh /
+COPY files/package-utils.sh /
+COPY files/stage-binaries-from-package.sh /
+COPY files/stage-binary-and-deps.sh /
 
 RUN mkdir -p /opt/stage && \
     /stage-binaries-from-package.sh /opt/stage conntrack \
@@ -26,8 +26,8 @@ RUN ls -la /opt/stage/usr/sbin
 
 FROM gcr.io/distroless/base
 
-COPY iptables-wrapper-installer.sh /
-COPY clean-distroless.sh /
+COPY files/iptables-wrapper-installer.sh /
+COPY files/clean-distroless.sh /
 COPY --from=build /opt/stage /
 COPY --from=binary /usr/local/bin/kube-proxy /usr/local/bin/kube-proxy
 
