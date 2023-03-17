@@ -6,7 +6,7 @@ RUN apk add --no-cache git
 
 RUN git clone -b v2.34.0 https://github.com/osrg/gobgp.git /gobgp
 
-RUN cd /gobgp && go get -u golang.org/x/net@v0.4.0 && \
+RUN cd /gobgp && go get -u golang.org/x/net@v0.7.0 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
@@ -15,17 +15,17 @@ RUN git clone -b v1.5.1 https://github.com/cloudnativelabs/kube-router.git /kube
 RUN cd /kube-router && \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
     export BUILD_DATE="2022-07-29T22:25:37+0000" && \
-    go get -u golang.org/x/net@v0.4.0 && \
+    go get -u golang.org/x/net@v0.7.0 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -ldflags "-X github.com/cloudnativelabs/kube-router/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/pkg/version.BuildDate=$BUILD_DATE" \
      -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
 
 
-FROM alpine:3.17
+FROM alpine:3.15
 
 RUN apk add --no-cache \
-      iptables \
-      ip6tables \
+      'iptables=1.8.7-r1' \
+      'ip6tables=1.8.7-r1' \
       ipset \
       iproute2 \
       ipvsadm \
