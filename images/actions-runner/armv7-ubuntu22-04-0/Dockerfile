@@ -25,6 +25,7 @@ RUN apt-get update -y \
     sudo \
     unzip \
     zip \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos "" --uid $RUNNER_USER_UID runner \
