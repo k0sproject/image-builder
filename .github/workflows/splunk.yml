@@ -1,0 +1,25 @@
+name: Build airgap image bundle for Splunk
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - './hack/splunk/**'
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run git checkout
+        uses: actions/checkout@v3
+
+      - name: Build airgap image bundle
+        run: |
+          cd ./hack/splunk
+          ./create-bundle.sh
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: k0s-airgap.tar
+          path: k0s-airgap.tar
