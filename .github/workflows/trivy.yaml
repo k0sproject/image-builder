@@ -56,5 +56,4 @@ jobs:
           vuln-type: 'os,library'
           # Disabling exit code for now, as we have some vulnerabilities that we need to fix
           #exit-code: '1'
-          # Disable to scan all vulnerabilities. If it will be annoying, we can set the severity level.
-          #severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH'
