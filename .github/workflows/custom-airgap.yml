@@ -1,0 +1,26 @@
+name: Build custom airgap image bundle
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - './hack/custom-airgap-*/**'
+
+jobs:
+  create-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run git checkout
+        uses: actions/checkout@v3
+
+      - name: Build airgap image bundle
+        run: |
+          cd ./hack/custom-airgap-bundle-1.26.3
+          ./create-bundle.sh
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v3
+        with:
+          name: k0s-custom-airgap-1.26.3.tar
+          path: ./hack/custom-airgap-bundle-1.26.3/k0s-custom-airgap-1.26.3.tar
