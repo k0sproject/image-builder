@@ -11,6 +11,7 @@ RUN set -eux; \
 		shadow-uidmap \
 		xfsprogs \
 		xz \
+		gcc \
 # pigz: https://github.com/moby/moby/pull/35697 (faster gzip implementation)
 		pigz \
 	; \
