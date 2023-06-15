@@ -4,7 +4,7 @@ RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 ARG \
   VERSION=1.27.3 \
-  HASH=b9be38a5506071a362864661b369c71b0a02e66df0a77a2afc68040fa9634751a189e3c6c94771aee3e17b50a73228ad992a08f31cf4b322ebd7003e7676d381
+  HASH=b3ecffc433df2dcaea9287e45da74f23c784f18bf22a33b65a196563077b01ba61b73f5761c16ae723ae821f27644f98c22be69ea16b8b14deb8b6e35d35b018
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
