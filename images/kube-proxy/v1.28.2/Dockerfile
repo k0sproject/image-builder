@@ -1,3 +1,5 @@
+# dummy change to trigger workflow
+
 FROM docker.io/library/golang:1.20.8-alpine3.18 as binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
