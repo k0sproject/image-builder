@@ -1,13 +1,15 @@
 ARG KUBE_ROUTER_VERSION=v1.6.0
 FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} as binaries
 
-FROM docker.io/library/golang:1.20.8-alpine3.18 as build
+FROM docker.io/library/golang:1.21.5-alpine3.18 as build
 ARG KUBE_ROUTER_VERSION
 RUN apk add --no-cache git
 
 RUN git clone -b v3.21.0 https://github.com/osrg/gobgp.git /gobgp
 
-RUN cd /gobgp && go get -u golang.org/x/net@v0.7.0 && \
+RUN cd /gobgp && \
+    go get -u golang.org/x/net@v0.17.0 && \
+    go get -u google.golang.org/grpc@v1.58.3 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
@@ -16,9 +18,10 @@ RUN git clone -b ${KUBE_ROUTER_VERSION} https://github.com/cloudnativelabs/kube-
 RUN cd /kube-router && \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
     export BUILD_DATE="2023-07-17T00:00:00+0000" && \
-    go get -u golang.org/x/net@v0.7.0 && \
+    go get -u golang.org/x/net@v0.17.0 && \
     go get -u github.com/docker/distribution@v2.8.2 && \
     go get -u github.com/docker/docker@v20.10.25 && \
+    go get -u google.golang.org/grpc@v1.58.3 && \
     go mod tidy && \
     CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/cloudnativelabs/kube-router/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/pkg/version.BuildDate=$BUILD_DATE" \
      -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
