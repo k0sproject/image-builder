@@ -3,94 +3,135 @@ on:
   push:
     branches:
       - main
+    paths:
+      - images/**
+      - .github/workflows/build.yml
+  pull_request:
+    paths:
+      - images/**
+      - .github/workflows/build.yml
 jobs:
   prepare:
     name: Generate matrix
     runs-on: ubuntu-22.04
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      changed_files: ${{ steps.changed-files.outputs.all_changed_files }}
+      matrix: ${{ steps.gen-matrix.outputs.matrix }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v38
-      - id: set-matrix
+      - name: Generate build matrix
+        id: gen-matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          matrix=$(./gen-matrix.sh)
-          echo matrix="$matrix" >> $GITHUB_OUTPUT
+          set -euxo pipefail
+          gh api -X GET "repos/$GITHUB_REPOSITORY/compare/${GITHUB_BASE_REF:-$GITHUB_SHA^1}...$GITHUB_SHA" \
+            -F page=1 -F per_page=1 \
+            --jq '
+              (.files | map({status: .status, path: .filename | split("/")})) as $files
+                | $files # select image folders that were touched in the changeset
+                    | map(.path)
+                    | map(select(length > 2 and .[0] == "images"))
+                    | map(.[1:3] | join("/"))
+                    | unique
+                    as $touched_images
+                | $files # select images that have been removed in the changeset
+                    | map(select(.status == "removed") | .path)
+                    | map(select(.[0] == "images" and .[3] == "Dockerfile"))
+                    | map(.[1:3] | join("/"))
+                    as $removed_images
+                | $touched_images - $removed_images
+                | if length > 0 then {folder: .} else {skip: 1} end # hack to skip an empty matrix (GitHub will fail on empty matrix builds)
+                | "matrix=\(tojson)"
+            ' | { set +x && tee -- "$GITHUB_OUTPUT"; }
 
   images:
     runs-on: ubuntu-22.04
-    needs:
-      - prepare
+    needs: [prepare]
+    if: needs.prepare.outputs.matrix != '{"skip":1}'
     strategy:
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
       fail-fast: false
-      matrix:
-        image_tag: ${{fromJson(needs.prepare.outputs.matrix)}}
+
     steps:
-      - name: Determine image path
-        id: imagepath
-        run: |
-          echo "base=${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
-          echo "value=./images/${IMAGE_TAG//://}" >> $GITHUB_OUTPUT
+      - name: Determine image parameters
+        id: image
         env:
-          IMAGE_TAG: ${{ matrix.image_tag }}
+          FOLDER: ${{ matrix.folder }}
+        run: |
+          set -euo pipefail
+
+          registry=ttl.sh
+          name="$GITHUB_REPOSITORY_OWNER-${FOLDER%%/*}-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          tag=1d
+          platforms=linux/amd64,linux/arm64,linux/arm/v7
+
+          if [ "$GITHUB_REPOSITORY_OWNER" = k0sproject ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            registry=quay.io
+            name="$GITHUB_REPOSITORY_OWNER/${FOLDER%%/*}"
+            tag="${FOLDER#*/}"
+          fi
+
+          case "$FOLDER" in
+            envoy*) platforms=linux/amd64,linux/arm64;;
+          esac
+
+          trivyResults="${FOLDER//\//-}-trivy.sarif"
+
+          {
+            echo "image-name=$registry/$name:$tag"
+            echo "platforms=$platforms"
+            echo "trivy-results=$trivyResults"
+          } | tee -- "$GITHUB_OUTPUT"
+
       - name: Checkout
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          show-progress: false
 
       - name: Set up QEMU
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: ${{ steps.image.outputs.platforms }}
 
       - name: Set up Docker Buildx
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         id: buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Quay
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        uses: docker/login-action@v2
+        if: startsWith(steps.image.outputs.image-name, 'quay.io/')
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_PASSWORD }}
           registry: quay.io
 
-      - id: set-arch
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        run: |
-          if [[ "${{ matrix.image_tag }}" =~ ^envoy.* ]]; then
-            echo "archs=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
-          else
-            echo "archs=linux/amd64,linux/arm64,linux/arm/v7" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build agent
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         uses: docker/build-push-action@v4
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: ${{ steps.imagepath.outputs.value }}
-          platforms: ${{ steps.set-arch.outputs.archs }}
+          context: ${{ format('images/{0}', matrix.folder) }}
+          platforms: ${{ steps.image.outputs.platforms }}
           push: true
-          tags: quay.io/k0sproject/${{ matrix.image_tag }}
+          tags: ${{ steps.image.outputs.image-name }}
 
       - name: Run Trivy vulnerability
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        uses: aquasecurity/trivy-action@0.11.2
+        uses: aquasecurity/trivy-action@0.16.1
         with:
-          image-ref: quay.io/k0sproject/${{ matrix.image_tag }}
+          image-ref: ${{ steps.image.outputs.image-name }}
           ignore-unfixed: true
-          format: 'sarif'
-          severity: 'CRITICAL,HIGH'
-          output: 'trivy-results.sarif'
+          format: sarif
+          severity: CRITICAL,HIGH
+          output: ${{ steps.image.outputs.trivy-results }}
+
+      - name: Upload Trivy scan results
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.image.outputs.trivy-results }}
+          path: ${{ steps.image.outputs.trivy-results }}
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
+        if: github.event_name == 'push'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: ${{ steps.image.outputs.trivy-results }}
