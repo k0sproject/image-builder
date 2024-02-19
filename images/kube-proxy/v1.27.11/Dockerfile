@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.20.13-alpine3.18 as binary
+FROM docker.io/library/golang:1.20.14-alpine3.18 as binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.27.md#source-code
 ARG \
-  VERSION=1.27.10 \
-  HASH=7a939d7ed2dec0b3b8b5ea2935a85cebdf56e6a9a91ff5404245ddb14ef267701284ed4cb04498ef73e58d50dd0f3d6ab5840c7271e6e0178f78492eb41d82d7
+  VERSION=1.27.11 \
+  HASH=de20cf5725b5b67418c55636c92682f186f4881ab0d6239570ac2c080bf661e759f22d2b194f9f152580906a06303df5b7a631fecd2d101e4b51c790ecfacb08
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \

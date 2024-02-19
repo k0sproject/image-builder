@@ -1,12 +1,12 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.21.6-alpine3.18
+ARG BUILDER_IMAGE=docker.io/library/golang:1.21.7-alpine3.19
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as kube-proxy
 
 RUN apk add --no-interactive --no-cache make bash rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.29.md#source-code
-ARG K8S_VERSION=1.29.1
-ARG K8S_HASH=f229ea55c8afa9a165b245081738adfbcfa5ed41be2be9b2ed76ed0a789378614417e02109eb5717f7973a4b21a649bf18a99fbad16e05f9496e0b03ac785576
+ARG K8S_VERSION=1.29.2
+ARG K8S_HASH=3ced73b388123240a2228506ffb678aea0983b2d152978255ce7e0488c5776749319170187365e3998fb9d92619abe46256036d02824fc75e59e246e27ba85de
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -75,6 +75,7 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
     conntrack-tools \
     ipset \
     iptables \
+    iptables-legacy \
     kmod \
   && cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper /opt/stage \
   && chroot /opt/stage /iptables-wrapper-installer.sh \
