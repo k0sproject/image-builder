@@ -1,12 +1,14 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.21.7-alpine3.19
+ARG BUILDER_IMAGE=docker.io/library/golang:1.21.8-alpine3.19
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as kube-proxy
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
-RUN apk add --no-interactive --no-cache make bash rsync
+RUN apk add --no-interactive --no-cache patch make bash rsync
+
+FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.29.md#source-code
-ARG K8S_VERSION=1.29.2
-ARG K8S_HASH=3ced73b388123240a2228506ffb678aea0983b2d152978255ce7e0488c5776749319170187365e3998fb9d92619abe46256036d02824fc75e59e246e27ba85de
+ARG K8S_VERSION=1.29.3
+ARG K8S_HASH=fa2994aaf691d34c60745925686efd5ce85b180a591f0892087af3c831fb0703ac01ae80f0dde3b0b414d57419aa9a3956d26500755674a1a6d6e68d31b4a84f
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -29,9 +31,7 @@ RUN --mount=type=tmpfs,target=/go/kubernetes/_output \
   && mkdir -p /opt/stage \
   && mv /go/kubernetes/_output/local/bin/linux/*/kube-proxy /opt/stage/kube-proxy
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as iptables-wrapper
-
-RUN apk add --no-interactive --no-cache make patch
+FROM build-base AS iptables-wrapper
 
 ARG IPTABLES_WRAPPER_VERSION=5792812d9e5a5bb7f22d79d557bbfeece253343d
 ARG IPTABLES_WRAPPER_HASH=a1cc352145b052c15d1334414ec12e9b10630b5e768a5234b156af491997e08f

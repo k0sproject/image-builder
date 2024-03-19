@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.20.14-alpine3.18 as binary
+FROM docker.io/library/golang:1.21.8-alpine3.18 as binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.27.md#source-code
 ARG \
-  VERSION=1.27.11 \
-  HASH=de20cf5725b5b67418c55636c92682f186f4881ab0d6239570ac2c080bf661e759f22d2b194f9f152580906a06303df5b7a631fecd2d101e4b51c790ecfacb08
+  VERSION=1.27.12 \
+  HASH=f177e1a45a9d273955d9dffeb801f2e964bb1f88bd1e494bf0cf5c9bbf5112480338ec27d8b5eab407cd87ac461f6df499b1a1ba5f94fae3a4121318cd99b4dc
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
@@ -13,7 +13,8 @@ RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   tar xf kubernetes-src.tar.gz -C /go/kubernetes && \
   rm kubernetes-src.tar.gz
 
-RUN make -C /go/kubernetes \
+RUN --network=none \
+  make -C /go/kubernetes \
   WHAT=cmd/kube-proxy \
   FORCE_HOST_GO=y \
   KUBE_STATIC_OVERRIDES=kube-proxy \
@@ -43,7 +44,7 @@ RUN mkdir -p /opt/stage && \
 
 RUN ls -la /opt/stage/usr/sbin
 
-FROM gcr.io/distroless/base
+FROM gcr.io/distroless/base@sha256:280852156756ea3f39f9e774a30346f2e756244e1f432aea3061c4ac85d90a66
 
 COPY files/iptables-wrapper-installer.sh /
 COPY files/clean-distroless.sh /
