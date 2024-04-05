@@ -1,11 +1,12 @@
-ARG KUBE_ROUTER_VERSION=v2.0.1
+ARG KUBE_ROUTER_VERSION=v2.1.0
 FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} as binaries
 
-FROM docker.io/library/golang:1.21.6-alpine3.19 as build
+FROM docker.io/library/golang:1.21.9-alpine3.19 as build
 ARG KUBE_ROUTER_VERSION
 RUN apk add --no-cache git
 
-RUN git clone -b v3.22.0 https://github.com/osrg/gobgp.git /gobgp
+# https://github.com/cloudnativelabs/kube-router/blob/master/Makefile#L29
+RUN git clone -b v3.23.0 https://github.com/osrg/gobgp.git /gobgp
 
 RUN cd /gobgp && \
     go get -u google.golang.org/grpc@v1.58.3 && \
@@ -23,7 +24,7 @@ RUN cd /kube-router && \
      -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
 
 
-FROM docker.io/library/alpine:3.18.5
+FROM docker.io/library/alpine:3.18.6
 ARG KUBE_ROUTER_VERSION
 RUN apk add --no-cache \
       'iptables=~1.8.9' \
