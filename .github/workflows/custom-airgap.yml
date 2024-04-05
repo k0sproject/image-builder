@@ -20,7 +20,7 @@ jobs:
           ./create-bundle.sh
 
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: k0s-custom-airgap-1.26.3.tar
           path: ./hack/custom-airgap-bundle-1.26.3/k0s-custom-airgap-1.26.3.tar
