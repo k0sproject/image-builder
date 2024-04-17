@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.21.8-alpine3.19 as binary
+FROM docker.io/library/golang:1.21.9-alpine3.19 as binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.28.md#source-code
 ARG \
-  VERSION=1.28.8 \
-  HASH=02177b6c0517146bec036ddbad8575f742bbf8b328a604bc30f5e16398dee22f192b6840370d9e345492f919de98a0978c55ea0890587cb91afe77109a7efe8c
+  VERSION=1.28.9 \
+  HASH=ba7ae8b833ebc21f384dd36e5efe61b12c082342314097542da0326fc19a4d54a3cd84848be60c85bf3675718eb213216d503ca8f088084e2d77b92cc1848c6a
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
@@ -21,8 +21,8 @@ RUN --network=none \
   KUBE_VERBOSE=9
 
 
-# https://github.com/kubernetes/release/blob/2fc3173c599fcd6b1835df46ce56398046616e8c/images/build/distroless-iptables/distroless/Dockerfile#L18-L69
-FROM docker.io/library/debian:bookworm-slim@sha256:ccb33c3ac5b02588fc1d9e4fc09b952e433d0c54d8618d0ee1afadf1f3cf2455 as build
+# https://github.com/kubernetes/release/blob/18a45b24a34ea6b14665ff10a95ca8f389b4e2b1/images/build/distroless-iptables/distroless-bookworm/Dockerfile#L18-L70
+FROM docker.io/library/debian:bookworm-slim@sha256:3d5df92588469a4c503adbead0e4129ef3f88e223954011c2169073897547cac as build
 
 COPY files/stage-binary-and-deps.sh /
 COPY files/stage-binaries-from-package.sh /
@@ -37,6 +37,7 @@ RUN apt-get -y update && \
     ebtables    \
     ipset       \
     iptables    \
+    `#nftables` \
     kmod        && \
     `# below binaries and dash are used by iptables-wrapper-installer.sh` \
     /stage-binary-and-deps.sh /opt/stage /bin/dash \
@@ -51,7 +52,7 @@ RUN apt-get -y update && \
 
 # We need to use distroless:base here as tzdata, glibc and some other base packages
 # are required
-FROM gcr.io/distroless/base-debian12@sha256:28a7f1fe3058f3efef4b7e5fe99f9c11d00eb09d9693b80bcb9d1f59989ba44a as intermediate
+FROM gcr.io/distroless/base-debian12@sha256:611d30d7f6d9992c37b1e1a212eefdf1f7c671deb56db3707e24eb01da8c4c2a as intermediate
 
 COPY files/clean-distroless.sh /clean-distroless.sh
 COPY files/iptables-wrapper-installer.sh /iptables-wrapper-installer.sh

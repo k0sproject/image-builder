@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.21.8-alpine3.18 as binary
+FROM docker.io/library/golang:1.21.9-alpine3.18 as binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.27.md#source-code
 ARG \
-  VERSION=1.27.12 \
-  HASH=f177e1a45a9d273955d9dffeb801f2e964bb1f88bd1e494bf0cf5c9bbf5112480338ec27d8b5eab407cd87ac461f6df499b1a1ba5f94fae3a4121318cd99b4dc
+  VERSION=1.27.13 \
+  HASH=65dfd50d6a1cdd5cbcbe1cf346949d1e0e99fbe747a7f95e66db52bf3a318afcfb514232e856f4fccaef4935d85fc71cd27dc77544711189c059e45587aa6067
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
@@ -44,7 +44,7 @@ RUN mkdir -p /opt/stage && \
 
 RUN ls -la /opt/stage/usr/sbin
 
-FROM gcr.io/distroless/base@sha256:280852156756ea3f39f9e774a30346f2e756244e1f432aea3061c4ac85d90a66
+FROM gcr.io/distroless/base@sha256:9bc3117a99c731a41200a28774405125cb6fbda1819f4a1af88bd3bfad5dcf32
 
 COPY files/iptables-wrapper-installer.sh /
 COPY files/clean-distroless.sh /
