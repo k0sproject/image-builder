@@ -15,12 +15,6 @@ binary:
   > and not for metrics. `go.opentelemetry.io/otel/sdk/metric` is not a
   > dependency of this project.
 
-* [CVE-2024-21626]  
-  <https://github.com/kubernetes/kubernetes/pull/123060>  
-  > Kubernetes uses `runc` for some aspects of kubelet, however we are NOT
-  > affected directly by the CVE-2024-21626 mentioned in the release notes for
-  > v1.1.12 directly (You do NOT need a new version of `kubelet`!).
-
 Notes:
 
 * Alpine's `kmod` package depends on `/bin/sh` for its trigger scripts run at
@@ -39,6 +33,5 @@ Notes:
 [kube-proxy]: https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
 [iptables-distroless]: https://github.com/kubernetes/release/tree/master/images/build/distroless-iptables/distroless
 [CVE-2023-47108]: https://avd.aquasec.com/nvd/cve-2023-47108
-[CVE-2024-21626]: https://avd.aquasec.com/nvd/cve-2024-21626
 [nftables backend]: https://github.com/kubernetes/enhancements/issues/3866
 [KEP-3866]: https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/3866-nftables-proxy/README.md
