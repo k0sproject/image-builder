@@ -1,12 +1,12 @@
-# https://github.com/projectcalico/calico/blob/v3.26.1/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.27.3/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.26.1 \
-  HASH=6d0afbbd4bdfe4deb18d0ac30adb7165eb08b0114ec5a00d016f37a8caf88849 \
+  VERSION=3.27.3 \
+  HASH=d11a32919bff389f642af5df8180ad3cec586030decd35adb2a7d4a8aa3b298e \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8
 
-FROM docker.io/library/golang:1.20.8-alpine3.18 as builder
+FROM docker.io/library/golang:1.22.2-alpine3.18 as builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
