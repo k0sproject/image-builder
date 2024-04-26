@@ -17,16 +17,15 @@ RUN apt-get update -y \
     && add-apt-repository -y ppa:git-core/ppa \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
-    curl \
+    build-essential \
     ca-certificates \
+    curl \
     git \
     git-lfs \
     jq \
     sudo \
     unzip \
     zip \
-    gcc \
-    make \
     && rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos "" --uid $RUNNER_USER_UID runner \
