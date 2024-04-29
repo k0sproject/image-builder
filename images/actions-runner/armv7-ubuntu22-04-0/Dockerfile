@@ -23,6 +23,7 @@ RUN apt-get update -y \
     git \
     git-lfs \
     jq \
+    openssh-client \
     sudo \
     unzip \
     zip \
