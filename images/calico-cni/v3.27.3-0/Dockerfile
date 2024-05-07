@@ -1,4 +1,4 @@
-# https://github.com/projectcalico/calico/blob/v3.26.1/cni-plugin/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.27.3/cni-plugin/Dockerfile.amd64
 
 ARG \
   VERSION=3.27.3 \
@@ -24,14 +24,13 @@ RUN set -e \
 WORKDIR /go/calico
 RUN CGO_ENABLED=0 go build \
   -v -buildvcs=false \
-  -o /out/opt/cni/bin/calico \
+  -o /out/opt/cni/bin/ \
   -ldflags "-s -w -X main.VERSION=v$VERSION" \
-  ./cni-plugin/cmd/calico
+  ./cni-plugin/cmd/calico ./cni-plugin/cmd/install 
 
 RUN set -e \
   && cd /out/opt/cni/bin \
-  && ln -s calico calico-ipam \
-  && ln -s calico install
+  && ln -s calico calico-ipam
 
 FROM scratch
 COPY --from=builder /out/ /
