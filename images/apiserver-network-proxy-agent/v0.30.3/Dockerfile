@@ -1,8 +1,8 @@
 # Build the proxy-agent binary
-FROM golang:1.21.8 as builder
+FROM golang:1.22.3 as builder
 RUN mkdir /go/src/sigs.k8s.io
 # version skew policy for konnectivity is described here https://github.com/kubernetes-sigs/apiserver-network-proxy#releases
-ARG APISERVER_AGENT_VERSION=0.1.8
+ARG APISERVER_AGENT_VERSION=0.30.3
 
 RUN git clone  -b v$APISERVER_AGENT_VERSION https://github.com/kubernetes-sigs/apiserver-network-proxy.git /go/src/sigs.k8s.io/apiserver-network-proxy 
 # Copy in the go src
