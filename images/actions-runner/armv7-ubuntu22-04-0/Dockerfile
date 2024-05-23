@@ -99,9 +99,7 @@ COPY entrypoint.sh startup.sh logger.sh graceful-stop.sh update-status /usr/bin/
 COPY docker-shim.sh /usr/local/bin/docker
 
 # Configure hooks folder structure.
-COPY hooks /etc/arc/hooks/
-RUN chown -R runner:runner /etc/arc/hooks/
-
+COPY --chown=runner:runner hooks /etc/arc/hooks/
 
 ENV ImageOS=ubuntu22
 
