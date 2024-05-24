@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ARG TARGETPLATFORM
-ARG RUNNER_VERSION=2.303.0
+ARG RUNNER_VERSION=2.316.1
 ARG RUNNER_CONTAINER_HOOKS_VERSION=0.2.0
 # Docker and Docker Compose arguments
 ARG CHANNEL=stable
@@ -99,7 +99,7 @@ COPY entrypoint.sh startup.sh logger.sh graceful-stop.sh update-status /usr/bin/
 COPY docker-shim.sh /usr/local/bin/docker
 
 # Configure hooks folder structure.
-COPY hooks /etc/arc/hooks/
+COPY --chown=runner:runner hooks /etc/arc/hooks/
 
 ENV ImageOS=ubuntu22
 
