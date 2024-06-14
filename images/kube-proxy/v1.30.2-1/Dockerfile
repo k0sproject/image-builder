@@ -82,7 +82,10 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
   && sed -i -e 's,^D:/bin/sh ,D:,' -e '/D:alpine-keys/d' /opt/stage/lib/apk/db/installed \
   && bins="$(chroot /opt/stage /bin/busybox --list-full)" \
   && apk del --no-interactive --no-network --root /opt/stage --purge busybox alpine-keys \
-  && for bin in $bins; do [ ! -e "/opt/stage/$bin" ] || rm -- "/opt/stage/$bin"; done \
+  && for bin in $bins; do \
+    link="$(readlink "/opt/stage/$bin")"; \
+    [ "${link##*/}" != busybox ] || rm "/opt/stage/$bin"; \
+  done \
   && rm -r /opt/stage/etc/issue /opt/stage/etc/apk/repositories /opt/stage/var/cache
 
 FROM scratch
