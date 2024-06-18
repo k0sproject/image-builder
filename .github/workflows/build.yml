@@ -107,7 +107,7 @@ jobs:
           registry: quay.io
 
       - name: Build agent
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
