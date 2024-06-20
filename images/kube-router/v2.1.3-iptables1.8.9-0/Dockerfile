@@ -3,7 +3,7 @@ FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} as binaries
 
 FROM docker.io/library/golang:1.21.11-alpine3.19 as build
 ARG KUBE_ROUTER_VERSION
-RUN apk add --no-cache git make
+RUN apk add --no-cache git make curl
 
 # https://github.com/cloudnativelabs/kube-router/blob/master/Makefile#L29
 RUN git clone -b v3.23.0 https://github.com/osrg/gobgp.git /gobgp
@@ -14,6 +14,8 @@ RUN cd /gobgp && \
     CGO_ENABLED=0 go build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 RUN git -c advice.detachedHead=false clone --branch ${KUBE_ROUTER_VERSION} https://github.com/cloudnativelabs/kube-router.git /kube-router
+
+RUN curl -L https://github.com/cloudnativelabs/kube-router/commit/a1125f6e185ca97456b9d280886595e624d24a7a.patch | git -C /kube-router apply
 
 RUN cd /kube-router && \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
