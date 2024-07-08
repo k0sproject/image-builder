@@ -6,9 +6,9 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 
 FROM build-base AS kube-proxy
 
-# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.30.md#source-code
-ARG K8S_VERSION=1.30.2
-ARG K8S_HASH=94ed343eb7606eb0d8dbce3cdbba89bd823e57be344e74dddfa97060ac269130db6804927933e6e3242a6249e71f02951876dc46e70da6967ff3b1ea3d78e2d5
+# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.31.md#source-code
+ARG K8S_VERSION=1.31.0-alpha.3
+ARG K8S_HASH=269f41b1394f6531ac94fd83b18150380b7c6f0c79d46195a1191fbfd90a751582865f672d3b408e9d2b2cbc52d4d65e75d3faad1ec7144b8ddaa8a9b5f97fe6
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -77,6 +77,7 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
     iptables \
     iptables-legacy \
     kmod \
+    nftables \
   && cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper /opt/stage \
   && chroot /opt/stage /iptables-wrapper-installer.sh \
   && sed -i -e 's,^D:/bin/sh ,D:,' -e '/D:alpine-keys/d' /opt/stage/lib/apk/db/installed \

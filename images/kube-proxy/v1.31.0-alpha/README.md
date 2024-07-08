@@ -28,7 +28,7 @@ Notes:
   here, pull the same trick as for the `kmod` package and remove that dependency
   as well.
 * Kube-Proxy's [nftables backend] ([KEP-3866]) needs the `nft` binary, which is
-  not yet part of this image.
+  now bundled as part of this image.
 
 [kube-proxy]: https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
 [iptables-distroless]: https://github.com/kubernetes/release/tree/master/images/build/distroless-iptables/distroless
