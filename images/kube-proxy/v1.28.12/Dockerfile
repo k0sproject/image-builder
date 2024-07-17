@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.21.11-alpine3.19 as binary
+FROM docker.io/library/golang:1.22.5-alpine3.19 AS binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.28.md#source-code
 ARG \
-  VERSION=1.28.11 \
-  HASH=cba35f33b44f2a6fb25cbfdafb76e5e060e346e045cb4e6d6ee277ec511194f913703e1a6af12841d4886accee47b282d83a54267e41d6894696dcb1cd698d10
+  VERSION=1.28.12 \
+  HASH=b9e0d50b7726886013dab700aa55f3f63498f0e32608643ba244efd0969fcd579c67f1efe8254d9515c7a8e01b95f1bde145bf0cd3ee27ea8daacffa3100e6bf
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
@@ -22,7 +22,7 @@ RUN --network=none \
 
 
 # https://github.com/kubernetes/release/blob/18a45b24a34ea6b14665ff10a95ca8f389b4e2b1/images/build/distroless-iptables/distroless-bookworm/Dockerfile#L18-L70
-FROM docker.io/library/debian:bookworm-slim@sha256:804194b909ef23fb995d9412c9378fb3505fe2427b70f3cc425339e48a828fca as build
+FROM docker.io/library/debian:bookworm-slim@sha256:f528891ab1aa484bf7233dbcc84f3c806c3e427571d75510a9d74bb5ec535b33 as build
 
 COPY files/stage-binary-and-deps.sh /
 COPY files/stage-binaries-from-package.sh /
@@ -52,7 +52,7 @@ RUN apt-get -y update && \
 
 # We need to use distroless:base here as tzdata, glibc and some other base packages
 # are required
-FROM gcr.io/distroless/base-debian12@sha256:786007f631d22e8a1a5084c5b177352d9dcac24b1e8c815187750f70b24a9fc6 as intermediate
+FROM gcr.io/distroless/base-debian12@sha256:1aae189e3baecbb4044c648d356ddb75025b2ba8d14cdc9c2a19ba784c90bfb9 as intermediate
 
 COPY files/clean-distroless.sh /clean-distroless.sh
 COPY files/iptables-wrapper-installer.sh /iptables-wrapper-installer.sh
