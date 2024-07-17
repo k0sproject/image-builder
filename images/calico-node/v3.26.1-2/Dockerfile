@@ -6,7 +6,7 @@ ARG \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8
 
-FROM docker.io/library/golang:1.20.8-alpine3.18 as builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -15,9 +15,13 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
   && rm -- "v$VERSION.tar.gz"
 
 WORKDIR /go/calico
-RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node
 
-FROM docker.io/library/alpine:3.18.3 as ipset
+ARG TARGETARCH
+RUN --mount=type=cache,id=calico-node-go-cache-$TARGETARCH,target=/root/.cache/go-build \
+  --mount=type=cache,id=calico-node-go-mod-$VERSION,target=/go/pkg/mod \
+  GOARCH=$TARGETARCH CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION" ./node/cmd/calico-node
+
+FROM docker.io/library/alpine:3.20.1 AS ipset
 RUN apk add --no-cache \
   build-base pkgconf curl \
   libmnl-dev libmnl-static
@@ -31,10 +35,10 @@ RUN curl -sSLo ipset.tar.bz2 "http://ipset.netfilter.org/ipset-$IPSET_VERSION.ta
 WORKDIR /src/ipset
 RUN printf '#!/usr/bin/env sh\nexec cc -static "$@"\n' >/src/cc-static && chmod +x /src/cc-static
 RUN CC=/src/cc-static CFLAGS=-static LDFLAGS=-static ./configure --enable-static --disable-shared --with-kmod=no
-RUN make && strip src/ipset
+RUN make -j && strip src/ipset
 RUN make install
 
-FROM docker.io/calico/node:v$VERSION as intermediate
+FROM docker.io/calico/node:v$VERSION AS intermediate
 COPY --from=builder /go/calico/calico-node /usr/bin/calico-node
 COPY --from=ipset /usr/local/sbin/ipset /usr/sbin/ipset
 COPY --from=ipset /src/ipset/ChangeLog /usr/share/doc/ipset/ChangeLog
