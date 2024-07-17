@@ -9,17 +9,21 @@ ARG \
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
-RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+RUN --mount=source=patches,target=/run/patches,ro \
+  set -e \
+  && apk add --no-cache patch \
+  && wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo "$HASH *v$VERSION.tar.gz" | sha256sum -c -; } \
   && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
-  && rm -- "v$VERSION.tar.gz"
+  && rm -- "v$VERSION.tar.gz" \
+  && for p in /run/patches/*; do patch -d /go/calico -p1 <"$p"; done
 
 WORKDIR /go/calico
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=calico-node-go-cache-$TARGETARCH,target=/root/.cache/go-build \
   --mount=type=cache,id=calico-node-go-mod-$VERSION,target=/go/pkg/mod \
-  GOARCH=$TARGETARCH CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION" ./node/cmd/calico-node
+  GOARCH=$TARGETARCH CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION+k0s.2" ./node/cmd/calico-node
 
 FROM docker.io/library/alpine:3.20.1 AS ipset
 RUN apk add --no-cache \
