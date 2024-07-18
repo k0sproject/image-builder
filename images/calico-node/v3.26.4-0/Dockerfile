@@ -24,7 +24,7 @@ RUN --mount=type=cache,id=calico-gomodcache,target=/go/pkg/mod,ro \
   --network=none \
   GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
     -v -buildvcs=false \
-    -ldflags "-s -w -X main.VERSION=v$VERSION" \
+    -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION" \
     -o /out/calico-node \
     ./node/cmd/calico-node
 
