@@ -6,7 +6,7 @@ ARG \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8
 
-FROM docker.io/library/golang:1.22.5-alpine3.20 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -15,7 +15,8 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
   && rm -- "v$VERSION.tar.gz"
 
 WORKDIR /go/calico
-RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node
+ARG TARGETARCH
+RUN GOARCH=$TARGETARCH CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node
 
 FROM docker.io/library/alpine:3.19.2 AS ipset
 RUN apk add --no-cache \

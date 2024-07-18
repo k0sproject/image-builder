@@ -6,7 +6,7 @@ ARG \
 
 FROM docker.io/calico/cni:v$VERSION AS upstream
 
-FROM docker.io/library/golang:1.22.5-alpine3.20 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -14,27 +14,35 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
   && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
   && rm -- "v$VERSION.tar.gz"
 
-COPY --from=upstream /licenses/ /out/licenses/
-COPY --from=upstream /opt/cni/ /out/opt/cni/
-RUN set -e \
-  && apk add --no-cache binutils \
-  && rm /out/opt/cni/bin/install /out/opt/cni/bin/calico /out/opt/cni/bin/calico-ipam \
-  && strip /out/opt/cni/bin/*
-
 WORKDIR /go/calico
-RUN CGO_ENABLED=0 go build \
+ARG TARGETARCH
+RUN GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
   -v -buildvcs=false \
-  -o /out/opt/cni/bin/calico \
   -ldflags "-s -w -X main.VERSION=v$VERSION" \
-  ./cni-plugin/cmd/calico
-
-RUN set -e \
-  && cd /out/opt/cni/bin \
+  -o /out/calico \
+  ./cni-plugin/cmd/calico \
+  && cd /out \
   && ln -s calico calico-ipam \
   && ln -s calico install
 
+FROM --platform=$BUILDPLATFORM docker.io/library/alpine:3.20.1 AS binaries
+COPY --from=upstream /licenses/ /out/licenses/
+COPY --from=upstream /opt/cni/ /out/opt/cni/
+ARG TARGETARCH
+RUN set -e \
+  && case $TARGETARCH in \
+    amd64) alpineArch=x86_64 ;; \
+    arm64) alpineArch=aarch64;; \
+      arm) alpineArch=armv7;; \
+        *) alpineArch=$TARGETARCH;; \
+  esac \
+  && apk add --no-cache binutils-$alpineArch \
+  && rm /out/opt/cni/bin/install /out/opt/cni/bin/calico /out/opt/cni/bin/calico-ipam \
+  && /usr/${alpineArch}-alpine-linux-musl*/bin/strip /out/opt/cni/bin/*
+
 FROM scratch
-COPY --from=builder /out/ /
+COPY --from=binaries /out/ /
+COPY --from=builder /out/ /opt/cni/bin/
 
 ENV PATH=/opt/cni/bin
 WORKDIR /opt/cni/bin

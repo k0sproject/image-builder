@@ -4,7 +4,7 @@ ARG \
   VERSION=3.26.4 \
   HASH=481e52de684c049f3f7f7bac78f0f6f4ae424d643451adc9e3d3fa9d03fb6d57
 
-FROM docker.io/library/golang:1.22.5-alpine3.20 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -13,13 +13,14 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
   && rm -- "v$VERSION.tar.gz"
 
 WORKDIR /go/calico
+ARG TARGETARCH
 RUN mkdir -p /out/usr/bin \
-  && CGO_ENABLED=0 go build \
+  && GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
     -v -buildvcs=false \
     -ldflags "-s -w -X main.VERSION=v$VERSION" \
     -o /out/usr/bin/kube-controllers \
     ./kube-controllers/cmd/kube-controllers \
-  && CGO_ENABLED=0 go build \
+  && GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
     -v -buildvcs=false \
     -ldflags "-s -w -X main.VERSION=v$VERSION" \
     -o /out/usr/bin/check-status \
