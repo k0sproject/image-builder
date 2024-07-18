@@ -1,12 +1,12 @@
-# https://github.com/projectcalico/calico/blob/v3.26.1/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.26.4/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.26.1 \
-  HASH=6d0afbbd4bdfe4deb18d0ac30adb7165eb08b0114ec5a00d016f37a8caf88849 \
+  VERSION=3.26.4 \
+  HASH=481e52de684c049f3f7f7bac78f0f6f4ae424d643451adc9e3d3fa9d03fb6d57 \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8
 
-FROM docker.io/library/golang:1.20.8-alpine3.18 as builder
+FROM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -17,7 +17,7 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
 WORKDIR /go/calico
 RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node
 
-FROM docker.io/library/alpine:3.18.3 as ipset
+FROM docker.io/library/alpine:3.19.2 AS ipset
 RUN apk add --no-cache \
   build-base pkgconf curl \
   libmnl-dev libmnl-static
@@ -34,7 +34,7 @@ RUN CC=/src/cc-static CFLAGS=-static LDFLAGS=-static ./configure --enable-static
 RUN make && strip src/ipset
 RUN make install
 
-FROM docker.io/calico/node:v$VERSION as intermediate
+FROM docker.io/calico/node:v$VERSION AS intermediate
 COPY --from=builder /go/calico/calico-node /usr/bin/calico-node
 COPY --from=ipset /usr/local/sbin/ipset /usr/sbin/ipset
 COPY --from=ipset /src/ipset/ChangeLog /usr/share/doc/ipset/ChangeLog
