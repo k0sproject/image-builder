@@ -8,15 +8,25 @@ ARG \
 
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.22.5-alpine3.20 AS builder
 
+WORKDIR /go/src/calico
 ARG VERSION HASH
-RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
-  && { echo "$HASH *v$VERSION.tar.gz" | sha256sum -c -; } \
-  && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
-  && rm -- "v$VERSION.tar.gz"
+RUN --mount=type=cache,id=calico-gomodcache,target=/go/pkg/mod \
+  --mount=type=tmpfs,target=/tmp \
+  wget -O /tmp/src.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+  && { printf '%s */tmp/src.tar.gz' "$HASH" | sha256sum -c -; } \
+  && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && go mod download -x
 
-WORKDIR /go/calico
 ARG TARGETARCH
-RUN GOARCH=$TARGETARCH CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node
+RUN --mount=type=cache,id=calico-gomodcache,target=/go/pkg/mod,ro \
+  --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --mount=type=tmpfs,target=/tmp \
+  --network=none \
+  GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
+    -v -buildvcs=false \
+    -ldflags "-s -w -X main.VERSION=v$VERSION" \
+    -o /out/calico-node \
+    ./node/cmd/calico-node
 
 FROM docker.io/library/alpine:3.19.2 AS ipset
 RUN apk add --no-cache \
@@ -32,11 +42,11 @@ RUN curl -sSLo ipset.tar.bz2 "http://ipset.netfilter.org/ipset-$IPSET_VERSION.ta
 WORKDIR /src/ipset
 RUN printf '#!/usr/bin/env sh\nexec cc -static "$@"\n' >/src/cc-static && chmod +x /src/cc-static
 RUN CC=/src/cc-static CFLAGS=-static LDFLAGS=-static ./configure --enable-static --disable-shared --with-kmod=no
-RUN make && strip src/ipset
+RUN make -j && strip src/ipset
 RUN make install
 
 FROM docker.io/calico/node:v$VERSION AS intermediate
-COPY --from=builder /go/calico/calico-node /usr/bin/calico-node
+COPY --from=builder /out/calico-node /usr/bin/calico-node
 COPY --from=ipset /usr/local/sbin/ipset /usr/sbin/ipset
 COPY --from=ipset /src/ipset/ChangeLog /usr/share/doc/ipset/ChangeLog
 
