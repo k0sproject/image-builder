@@ -1,0 +1,41 @@
+From cc0fbd193dce7f01df9cb54c7e37679df7835ca3 Mon Sep 17 00:00:00 2001
+From: matt <mleung975@gmail.com>
+Date: Wed, 27 Sep 2023 16:11:34 -0700
+Subject: [PATCH] Update libraries
+
+---
+ go.mod | 2 +-
+ go.sum | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/go.mod b/go.mod
+index ac2cdbafa..e75793550 100644
+--- a/go.mod
++++ b/go.mod
+@@ -141,7 +141,7 @@ require (
+ 	github.com/containerd/ttrpc v1.1.0 // indirect
+ 	github.com/coreos/go-iptables v0.6.0 // indirect
+ 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+-	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
++	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+ 	github.com/docker/distribution v2.8.2+incompatible // indirect
+ 	github.com/docker/go-units v0.5.0 // indirect
+ 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
+diff --git a/go.sum b/go.sum
+index 98a21e20e..a2fb0d463 100644
+--- a/go.sum
++++ b/go.sum
+@@ -229,8 +229,9 @@ github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsr
+ github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
+ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+ github.com/creack/pty v1.1.11/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
+-github.com/cyphar/filepath-securejoin v0.2.3 h1:YX6ebbZCZP7VkM3scTTokDgBL2TY741X51MTk3ycuNI=
+ github.com/cyphar/filepath-securejoin v0.2.3/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxGGx79pTxQpKOJNYHHl4=
++github.com/cyphar/filepath-securejoin v0.2.4 h1:Ugdm7cg7i6ZK6x3xDF1oEu1nfkyfH53EtKeQYTC3kyg=
++github.com/cyphar/filepath-securejoin v0.2.4/go.mod h1:aPGpWjXOXUn2NCNjFvBE6aRxGGx79pTxQpKOJNYHHl4=
+ github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c/go.mod h1:Ct2BUK8SB0YC1SMSibvLzxjeJLnrYEVLULFNiHY9YfQ=
+ github.com/d2g/dhcp4client v1.0.0/go.mod h1:j0hNfjhrt2SxUOw55nL0ATM/z4Yt3t2Kd1mW34z5W5s=
+ github.com/d2g/dhcp4server v0.0.0-20181031114812-7d4a0a7f59a5/go.mod h1:Eo87+Kg/IX2hfWJfwxMzLyuSZyxSoAug2nGa1G2QAi8=
+-- 
+2.42.2
+
