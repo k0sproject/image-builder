@@ -1,0 +1,43 @@
+From f2d3587f53647c8e0d3aff4711b105c809cf2500 Mon Sep 17 00:00:00 2001
+From: Jiawei Huang <jiawei@tigera.io>
+Date: Wed, 11 Oct 2023 10:56:50 -0700
+Subject: [PATCH 20/22] Fix cni-plugin deprecated function wait.Poll
+
+---
+ cni-plugin/pkg/plugin/plugin.go | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/cni-plugin/pkg/plugin/plugin.go b/cni-plugin/pkg/plugin/plugin.go
+index 614538c63..5a7451ef8 100644
+--- a/cni-plugin/pkg/plugin/plugin.go
++++ b/cni-plugin/pkg/plugin/plugin.go
+@@ -126,14 +126,14 @@ func isEndpointReady(readyEndpoint string, timeout time.Duration) (bool, error)
+ 	}
+ 	defer resp.Body.Close()
+ 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+-		return false, fmt.Errorf("Endpoint is not ready, response code returned:%d", resp.StatusCode)
++		return false, fmt.Errorf("endpoint is not ready, response code returned:%d", resp.StatusCode)
+ 	}
+ 	return true, nil
+ }
+ 
+ func pollEndpointReadiness(endpoint string, interval, timeout time.Duration) error {
+-	return wait.Poll(interval, timeout,
+-		func() (bool, error) {
++	return wait.PollUntilContextTimeout(context.Background(), interval, timeout, false,
++		func(context.Context) (bool, error) {
+ 			if isReady, err := isEndpointReady(endpoint, interval); !isReady {
+ 				if err != nil {
+ 					logrus.Errorf("Endpoint may not be ready:%v", err)
+@@ -238,7 +238,7 @@ func cmdAdd(args *skel.CmdArgs) (err error) {
+ 
+ 	for _, endpoint := range conf.ReadinessGates {
+ 		if _, err := url.ParseRequestURI(endpoint); err != nil {
+-			return fmt.Errorf("Invalid URL set for ReadinessGates:%s Error:%v",
++			return fmt.Errorf("invalid URL set for ReadinessGates:%s Error:%v",
+ 				endpoint, err)
+ 		}
+ 		err := pollEndpointReadiness(endpoint, 5*time.Second, 30*time.Second)
+-- 
+2.42.2
+

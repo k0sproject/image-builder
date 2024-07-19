@@ -1,0 +1,107 @@
+From b09783db2e1d5c98645538ca287a464c80f2ea55 Mon Sep 17 00:00:00 2001
+From: Jiawei Huang <jiawei@tigera.io>
+Date: Wed, 11 Oct 2023 11:06:57 -0700
+Subject: [PATCH] Fix felix/bpf/proxy build
+
+(cherry picked from commit e93e9c5ca072ac9f6e751b60b2e24e83d5777a27)
+---
+ felix/bpf/proxy/proxy.go    | 38 ++++++++++++++-----------------------
+ felix/bpf/proxy/topology.go |  2 +-
+ 2 files changed, 15 insertions(+), 25 deletions(-)
+
+diff --git a/felix/bpf/proxy/proxy.go b/felix/bpf/proxy/proxy.go
+index e212243a6..1eb6e97de 100644
+--- a/felix/bpf/proxy/proxy.go
++++ b/felix/bpf/proxy/proxy.go
+@@ -30,6 +30,7 @@ import (
+ 	"k8s.io/apimachinery/pkg/labels"
+ 	"k8s.io/apimachinery/pkg/runtime"
+ 	"k8s.io/apimachinery/pkg/selection"
++	"k8s.io/apimachinery/pkg/types"
+ 	"k8s.io/client-go/informers"
+ 	"k8s.io/client-go/kubernetes"
+ 	"k8s.io/client-go/tools/events"
+@@ -37,6 +38,7 @@ import (
+ 	"k8s.io/kubernetes/pkg/proxy/apis"
+ 	"k8s.io/kubernetes/pkg/proxy/config"
+ 	"k8s.io/kubernetes/pkg/proxy/healthcheck"
++	"k8s.io/kubernetes/pkg/proxy/util"
+ 	"k8s.io/kubernetes/pkg/util/async"
+ )
+ 
+@@ -141,7 +143,14 @@ func New(k8s kubernetes.Interface, dp DPSyncer, hostname string, opts ...Option)
+ 		p.invokeDPSyncer, p.minDPSyncPeriod, time.Hour /* XXX might be infinite? */, 1)
+ 	dp.SetTriggerFn(p.runner.Run)
+ 
+-	p.svcHealthServer = healthcheck.NewServiceHealthServer(p.hostname, p.recorder, []string{"0.0.0.0/0"})
++	nodeRef := &v1.ObjectReference{
++		Kind:      "Node",
++		Name:      p.hostname,
++		UID:       types.UID(p.hostname),
++		Namespace: "",
++	}
++	p.healthzServer = healthcheck.NewProxierHealthServer("0.0.0.0:10256", p.minDPSyncPeriod, p.recorder, nodeRef)
++	p.svcHealthServer = healthcheck.NewServiceHealthServer(p.hostname, p.recorder, util.NewNodePortAddresses([]string{"0.0.0.0/0"}), p.healthzServer)
+ 
+ 	p.epsChanges = k8sp.NewEndpointChangeTracker(p.hostname,
+ 		nil, // change if you want to provide more ctx
+@@ -223,13 +232,13 @@ func (p *proxy) invokeDPSyncer() {
+ 	p.runnerLck.Lock()
+ 	defer p.runnerLck.Unlock()
+ 
+-	svcUpdateResult := p.svcMap.Update(p.svcChanges)
+-	epsUpdateResult := p.epsMap.Update(p.epsChanges)
++	_ = p.svcMap.Update(p.svcChanges)
++	_ = p.epsMap.Update(p.epsChanges)
+ 
+-	if err := p.svcHealthServer.SyncServices(svcUpdateResult.HCServiceNodePorts); err != nil {
++	if err := p.svcHealthServer.SyncServices(p.svcMap.HealthCheckNodePorts()); err != nil {
+ 		log.WithError(err).Error("Error syncing healthcheck services")
+ 	}
+-	if err := p.svcHealthServer.SyncEndpoints(epsUpdateResult.HCEndpointsLocalIPSize); err != nil {
++	if err := p.svcHealthServer.SyncEndpoints(p.epsMap.LocalReadyEndpoints()); err != nil {
+ 		log.WithError(err).Error("Error syncing healthcheck endpoints")
+ 	}
+ 
+@@ -269,25 +278,6 @@ func (p *proxy) OnServiceSynced() {
+ 	p.forceSyncDP()
+ }
+ 
+-func (p *proxy) OnEndpointsAdd(eps *v1.Endpoints) {
+-	p.OnEndpointsUpdate(nil, eps)
+-}
+-
+-func (p *proxy) OnEndpointsUpdate(old, curr *v1.Endpoints) {
+-	if p.epsChanges.Update(old, curr) && p.isInitialized() {
+-		p.syncDP()
+-	}
+-}
+-
+-func (p *proxy) OnEndpointsDelete(eps *v1.Endpoints) {
+-	p.OnEndpointsUpdate(eps, nil)
+-}
+-
+-func (p *proxy) OnEndpointsSynced() {
+-	p.setEpsSynced()
+-	p.forceSyncDP()
+-}
+-
+ func (p *proxy) OnEndpointSliceAdd(eps *discovery.EndpointSlice) {
+ 	if p.epsChanges.EndpointSliceUpdate(eps, false) && p.isInitialized() {
+ 		p.syncDP()
+diff --git a/felix/bpf/proxy/topology.go b/felix/bpf/proxy/topology.go
+index 46b2f9a5f..65bb7bec1 100644
+--- a/felix/bpf/proxy/topology.go
++++ b/felix/bpf/proxy/topology.go
+@@ -35,7 +35,7 @@ func ShouldAppendTopologyAwareEndpoint(nodeZone string, hintsAnnotation string,
+ 	// If hints annotation is not recognized or empty then ignore Topology Aware Hints.
+ 	if hintsAnnotation != "Auto" && hintsAnnotation != "auto" {
+ 		if hintsAnnotation != "" && hintsAnnotation != "Disabled" && hintsAnnotation != "disabled" {
+-			log.Debugf("Skipping topology aware endpoint filtering since Service has unexpected value '%s' for key '%s'\n", hintsAnnotation, v1.AnnotationTopologyAwareHints)
++			log.Debugf("Skipping topology aware endpoint filtering since Service has unexpected value '%s' for key '%s'\n", hintsAnnotation, v1.DeprecatedAnnotationTopologyAwareHints)
+ 		}
+ 
+ 		return true
+-- 
+2.42.2
+

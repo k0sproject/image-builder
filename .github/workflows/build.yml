@@ -106,11 +106,27 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
           registry: quay.io
 
+      - name: Collect additional build contexts
+        id: build-contexts
+        env:
+          FOLDER: ${{ matrix.folder }}
+        run: |
+          set -euo pipefail
+          if [ -d images/"$FOLDER"/build-contexts ]; then
+            for ctx in images/"$FOLDER"/build-contexts/*; do
+              printf '%s=%s\n' "${ctx##*/}" "$ctx"
+            done
+          fi \
+            | jq --slurp --raw-input --raw-output \
+              'rtrimstr("\n") | split("\n") | "list=\(tojson)"' \
+            | tee -- "$GITHUB_OUTPUT"
+
       - name: Build agent
         uses: docker/build-push-action@v6
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
+          build-contexts: ${{ join(fromJSON(steps.build-contexts.outputs.list), '\n') }}
           platforms: ${{ steps.image.outputs.platforms }}
           push: true
           tags: ${{ steps.image.outputs.image-name }}

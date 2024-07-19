@@ -45,7 +45,7 @@ jobs:
       - name: Build an image from Dockerfile
         if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         run: |
-          docker build -t quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }} ${{ steps.imagepath.outputs.value }}
+          hack/docker-buildx.sh --progress=plain --load -t quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }} ${{ steps.imagepath.outputs.value }}
       - name: Run Trivy vulnerability scanner
         if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
         uses: aquasecurity/trivy-action@0.24.0

@@ -12,9 +12,16 @@ WORKDIR /go/src/calico
 ARG VERSION HASH
 RUN --mount=type=cache,id=calico-gomodcache,target=/go/pkg/mod \
   --mount=type=tmpfs,target=/tmp \
-  wget -O /tmp/src.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+  --mount=from=patches,target=/run/patches,ro \
+  set -e \
+  && apk add --no-cache patch \
+  && wget -O /tmp/src.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { printf '%s */tmp/src.tar.gz' "$HASH" | sha256sum -c -; } \
   && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && for p in /run/patches/*; do \
+    echo Applying "${p##*/}" >&2; \
+    patch -p1 <"$p"; \
+  done \
   && go mod download -x
 
 ARG TARGETARCH
@@ -24,7 +31,7 @@ RUN --mount=type=cache,id=calico-gomodcache,target=/go/pkg/mod,ro \
   --network=none \
   GOARCH=$TARGETARCH CGO_ENABLED=0 go build \
     -v -buildvcs=false \
-    -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION" \
+    -ldflags "-s -w -X github.com/projectcalico/calico/node/pkg/lifecycle/startup.VERSION=v$VERSION+k0s.0" \
     -o /out/calico-node \
     ./node/cmd/calico-node
 

@@ -1,0 +1,57 @@
+From 2b0e1bff4aca2973375c511784e931aa4839cd34 Mon Sep 17 00:00:00 2001
+From: Jiawei Huang <jiawei@tigera.io>
+Date: Wed, 11 Oct 2023 13:36:11 -0700
+Subject: [PATCH 22/22] Ignore deprecated linter staticcheck for
+ wait.NewExponentialBackoffManager
+
+k8s/apimachinery wait.NewExponentialBackoffManager is deprecated since v1.27
+but the replacement wait.BackoffUntil still reference BackoffManager so
+ignore deprecated lint checks for now.
+---
+ felix/aws/ec2.go             | 1 +
+ felix/wireguard/bootstrap.go | 3 +++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/felix/aws/ec2.go b/felix/aws/ec2.go
+index fcb60322d..d18754991 100644
+--- a/felix/aws/ec2.go
++++ b/felix/aws/ec2.go
+@@ -85,6 +85,7 @@ func WaitForEC2SrcDstCheckUpdate(check string, healthAgg *health.HealthAggregato
+ 		jitter        = 0.1
+ 	)
+ 
++	//nolint:staticcheck // Ignore SA1019 deprecated
+ 	backoffMgr := wait.NewExponentialBackoffManager(initBackoff, maxBackoff, resetDuration, backoffFactor, jitter, c)
+ 	defer backoffMgr.Backoff().Stop()
+ 
+diff --git a/felix/wireguard/bootstrap.go b/felix/wireguard/bootstrap.go
+index ec35a987e..427a5706a 100644
+--- a/felix/wireguard/bootstrap.go
++++ b/felix/wireguard/bootstrap.go
+@@ -413,6 +413,7 @@ func removeWireguardForBootstrapping(
+ 
+ // getPublicKeyForNode returns the configured wireguard public key for a given node.
+ func getPublicKeyForNode(logCtx *log.Entry, nodeName string, calicoClient clientv3.NodesClient, maxRetries int, ipVersion uint8) (string, error) {
++	//nolint:staticcheck // Ignore SA1019 deprecated
+ 	expBackoffMgr := wait.NewExponentialBackoffManager(
+ 		bootstrapBackoffDuration,
+ 		bootstrapBackoffMax,
+@@ -522,6 +523,7 @@ func removeWireguardDevice(
+ 
+ 	logCtx.Debug("Removing wireguard device")
+ 
++	//nolint:staticcheck // Ignore SA1019 deprecated
+ 	expBackoffMgr := wait.NewExponentialBackoffManager(
+ 		bootstrapBackoffDuration,
+ 		bootstrapBackoffMax,
+@@ -570,6 +572,7 @@ func removeWireguardPublicKey(
+ 		return fmt.Errorf("unknown IP version: %d", ipVersion)
+ 	}
+ 
++	//nolint:staticcheck // Ignore SA1019 deprecated
+ 	expBackoffMgr := wait.NewExponentialBackoffManager(
+ 		bootstrapBackoffDuration,
+ 		bootstrapBackoffMax,
+-- 
+2.42.2
+
