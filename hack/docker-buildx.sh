@@ -22,8 +22,10 @@ fi
 
 dir=$(CDPATH='' cd -- "$(eval echo "\$$#")" && pwd -P)
 
-for ctx in "$dir"/build-contexts/*; do
-  set -- --build-context="${ctx##*/}=$ctx" "$@"
-done
+if [ -d "$dir/build-contexts" ]; then
+  for ctx in "$dir"/build-contexts/*; do
+    set -- --build-context="${ctx##*/}=$ctx" "$@"
+  done
+fi
 
 exec docker buildx build "$@"
