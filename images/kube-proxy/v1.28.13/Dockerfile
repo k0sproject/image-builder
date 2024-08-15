@@ -4,8 +4,8 @@ RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.28.md#source-code
 ARG \
-  VERSION=1.28.12 \
-  HASH=b9e0d50b7726886013dab700aa55f3f63498f0e32608643ba244efd0969fcd579c67f1efe8254d9515c7a8e01b95f1bde145bf0cd3ee27ea8daacffa3100e6bf
+  VERSION=1.28.13 \
+  HASH=1575a17efe3e356ac07947f8b635723c85ad798b362e2e6dcfca5ac90a36b11a96ba424475ee33db609f08ab0ae201ff238f9df69ea34202bb276ea0f4389daf
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
