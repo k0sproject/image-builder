@@ -1,8 +1,8 @@
 # https://github.com/projectcalico/calico/blob/v3.27.3/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.27.3 \
-  HASH=d11a32919bff389f642af5df8180ad3cec586030decd35adb2a7d4a8aa3b298e \
+  VERSION=3.28.1 \
+  HASH=c56f1530e7ded9d5b4afb9d83a7a24da6d2959ef7ad38521813f1c2bf138182d \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8
 
