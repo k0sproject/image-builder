@@ -110,7 +110,7 @@ COPY --from=iptables /usr/local/sbin/iptables* /sbin/
 COPY --from=iptables-wrapper /iptables-wrappers/bin/iptables-wrapper /
 COPY --from=iptables-wrapper /iptables-wrappers/iptables-wrapper-installer.sh /
 
-RUN /iptables-wrapper-installer.sh
+RUN /iptables-wrapper-installer.sh --no-sanity-check
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
