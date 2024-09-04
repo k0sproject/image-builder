@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.22.5-alpine3.19
+ARG BUILDER_IMAGE=docker.io/library/golang:1.22.6-alpine3.20
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -6,11 +6,12 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 
 FROM build-base AS kube-proxy
 
-# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.30.md#source-code
-ARG K8S_VERSION=1.30.4
-ARG K8S_HASH=483893d82cb4a7232f51a95fc80f0963f95226898ddc271af9c9ecb6f56dd263b0661da2c2548665df18e32b08825e15614f9b03399765fb3f421c74d12cfec4
+# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.31.md#source-code
+ARG K8S_VERSION=1.31.0
+ARG K8S_HASH=5565c7d99601ff9fd2fae7b37b94d5333201a9745c27dc79c38aa6883204e5e447098c1f04b84dcb1485e42bc6ec9619b8b813f27871709b615f638b42f8ded4
 
 RUN set -euo pipefail \
+  # https://dl.k8s.io/v1.31.0/kubernetes-src.tar.gz
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
   && { echo "${K8S_HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } \
   && mkdir -p /go/kubernetes \
@@ -75,6 +76,7 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
     conntrack-tools \
     ipset \
     iptables \
+    nftables \
     iptables-legacy \
     kmod \
   && cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper /opt/stage \
@@ -91,5 +93,6 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
 FROM scratch
 COPY --from=baselayout /opt/stage /
 COPY --from=kube-proxy /opt/stage/kube-proxy /usr/local/bin/kube-proxy
+
 
 ENTRYPOINT ["/usr/local/bin/kube-proxy"]
