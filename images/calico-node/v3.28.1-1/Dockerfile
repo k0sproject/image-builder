@@ -44,20 +44,53 @@ RUN make install
 # Just a sanity check that it's not segfaulting
 RUN ipset -h
 
-# TODO We should build bird bins from source
-FROM docker.io/calico/bird:$BIRD_VERSION-$TARGETARCH$TARGETVARIANT AS bird
+# https://github.com/projectcalico/bird/blob/feature-ipinip/create_binaries.sh
+FROM docker.io/library/alpine:3.20 AS bird
+RUN apk add --no-cache \
+  build-base git linux-headers bison flex autoconf
+RUN git clone https://github.com/projectcalico/bird.git /src
+WORKDIR /src
+RUN git checkout -b build $BIRD_VERSION
+RUN autoreconf
+# https://github.com/projectcalico/bird/blob/9111ec3c3ff3e769727a5940d3d829a0be8b5201/create_binaries.sh#L57
+RUN mkdir build-ipv6 && cd build-ipv6 \
+  && LDFLAGS="-static" ../configure \
+  --with-protocols="bfd bgp pipe static" \
+  --enable-ipv6=yes \
+  --enable-client=no \
+  --enable-pthreads=yes \
+  --with-sysconfig=linux-v6 \
+  --runstatedir=/var/run/calico \
+  && make -j$(nproc) bird birdcl \
+  && strip bird birdcl \
+  && install -m755 bird /bird6 \
+  && install -m755 birdcl /birdcl6
+RUN mkdir build-ipv4 && cd build-ipv4 \
+  && LDFLAGS="-static" ../configure \
+  --with-protocols="bfd bgp pipe static" \
+  --enable-client=no \
+  --enable-pthreads=yes \
+  --with-sysconfig=linux-v6 \
+  --runstatedir=/var/run/calico \
+  && make -j$(nproc) bird birdcl \
+  && strip bird birdcl \
+  && install -m755 bird /bird \
+  && install -m755 birdcl /birdcl
+RUN /bird --version && /bird6 --version
+# verify that it is statically linked and that libc is not needed
+RUN ! scanelf -n --nobanner /bird /birdcl /bird6 /birdcl6 | grep libc
 
 # Build iptables
 FROM docker.io/library/alpine:3.20 AS iptables
 ARG IPTABLES_VERSION
 
 RUN apk add build-base curl pkgconf \
-	linux-headers \
-	libmnl-dev libmnl-static \
-	libnftnl-dev
+  linux-headers \
+  libmnl-dev libmnl-static \
+  libnftnl-dev
 
 RUN curl --proto '=https' --tlsv1.2 -L https://www.netfilter.org/projects/iptables/files/iptables-$IPTABLES_VERSION.tar.xz \
-	| tar -C / -Jx
+  | tar -C / -Jx
 
 ARG TARGET_OS
 RUN cd /iptables-$IPTABLES_VERSION && \
@@ -75,10 +108,10 @@ ARG IPTABLES_WRAPPERS_VERSION
 RUN apk add --no-cache git make
 RUN git clone https://github.com/kubernetes-sigs/iptables-wrappers.git /iptables-wrappers
 RUN cd /iptables-wrappers \
-    && git checkout "${IPTABLES_WRAPPERS_VERSION}" \
-    && make build \
-    && test -x bin/iptables-wrapper \
-    && test -x iptables-wrapper-installer.sh
+  && git checkout "${IPTABLES_WRAPPERS_VERSION}" \
+  && make build \
+  && test -x bin/iptables-wrapper \
+  && test -x iptables-wrapper-installer.sh
 
 # Build the image based on alpine
 FROM docker.io/library/alpine:3.20
@@ -100,7 +133,7 @@ COPY --from=builder /go/calico/confd/etc/ /etc/
 # Change permissions to make confd templates and output available in /etc/calico
 # to all container users.
 RUN chgrp -R 0 /etc/calico && \
-    chmod -R g=u /etc/calico
+  chmod -R g=u /etc/calico
 
 COPY --from=bird /bird* /usr/bin/
 
