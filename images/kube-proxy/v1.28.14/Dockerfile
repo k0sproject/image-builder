@@ -1,11 +1,11 @@
-FROM docker.io/library/golang:1.22.5-alpine3.19 AS binary
+FROM docker.io/library/golang:1.22.7-alpine3.19 AS binary
 
 RUN apk add --no-cache cmd:make cmd:bash cmd:rsync
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.28.md#source-code
 ARG \
-  VERSION=1.28.13 \
-  HASH=1575a17efe3e356ac07947f8b635723c85ad798b362e2e6dcfca5ac90a36b11a96ba424475ee33db609f08ab0ae201ff238f9df69ea34202bb276ea0f4389daf
+  VERSION=1.28.14 \
+  HASH=f51815cfd553dc80e678a723ba7eeb996dfd5a9c65180e59f948128a434d401f1263011186a8d6890025a22cc8a61af91c76e233277b61222069923f5a5a36a5
 
 RUN wget https://dl.k8s.io/v${VERSION}/kubernetes-src.tar.gz && \
   { echo "${HASH} *kubernetes-src.tar.gz" | sha512sum -c -; } && \
@@ -30,25 +30,25 @@ COPY files/package-utils.sh /
 
 
 RUN apt-get -y update && \
-    apt-get -y dist-upgrade && \
-    apt-get -y install bash curl && \
-    mkdir -p /opt/stage && \
-    /stage-binaries-from-package.sh /opt/stage conntrack \
-    ebtables    \
-    ipset       \
-    iptables    \
-    `#nftables` \
-    kmod        && \
-    `# below binaries and dash are used by iptables-wrapper-installer.sh` \
-    /stage-binary-and-deps.sh /opt/stage /bin/dash \
-    /bin/cat \
-    /bin/chmod \
-    /bin/grep \
-    /bin/ln  \
-    /bin/rm \
-    /bin/sleep \
-    /usr/bin/wc && \
-    ln -sf /bin/dash /opt/stage/bin/sh
+  apt-get -y dist-upgrade && \
+  apt-get -y install bash curl && \
+  mkdir -p /opt/stage && \
+  /stage-binaries-from-package.sh /opt/stage conntrack \
+  ebtables    \
+  ipset       \
+  iptables    \
+  `#nftables` \
+  kmod        && \
+  `# below binaries and dash are used by iptables-wrapper-installer.sh` \
+  /stage-binary-and-deps.sh /opt/stage /bin/dash \
+  /bin/cat \
+  /bin/chmod \
+  /bin/grep \
+  /bin/ln  \
+  /bin/rm \
+  /bin/sleep \
+  /usr/bin/wc && \
+  ln -sf /bin/dash /opt/stage/bin/sh
 
 # We need to use distroless:base here as tzdata, glibc and some other base packages
 # are required
@@ -60,8 +60,8 @@ COPY --from=build /opt/stage /
 COPY --from=binary /go/kubernetes/_output/local/bin/linux/*/kube-proxy /usr/local/bin/kube-proxy
 # iptables-wrapper-installer needs to know that iptables exists before doing all its magic
 RUN echo "" >  /usr/sbin/iptables && \
-    /iptables-wrapper-installer.sh && \
-    /clean-distroless.sh
+  /iptables-wrapper-installer.sh && \
+  /clean-distroless.sh
 
 FROM scratch
 COPY --from=intermediate / /
