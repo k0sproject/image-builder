@@ -107,6 +107,7 @@ COPY --from=bird /bird* /usr/bin/
 # Copy iptables and wrappers
 COPY --from=iptables /usr/local/sbin/xtables-* /sbin/
 COPY --from=iptables /usr/local/sbin/iptables* /sbin/
+COPY --from=iptables /usr/local/sbin/ip6tables* /sbin/
 COPY --from=iptables-wrapper /iptables-wrappers/bin/iptables-wrapper /
 COPY --from=iptables-wrapper /iptables-wrappers/iptables-wrapper-installer.sh /
 
