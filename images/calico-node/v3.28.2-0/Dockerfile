@@ -1,15 +1,15 @@
-# https://github.com/projectcalico/calico/blob/v3.28.1/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.28.2/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.28.1 \
-  HASH=c56f1530e7ded9d5b4afb9d83a7a24da6d2959ef7ad38521813f1c2bf138182d \
+  VERSION=3.28.2 \
+  HASH=f02a0e99e060850bd9050d4c94d37df899911a5e357e1d26e1b5b79a923bb389 \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8 \
-  # https://github.com/projectcalico/calico/blob/v3.28.1/metadata.mk#L29
-  BIRD_VERSION=v0.3.3-211-g9111ec3c \
-  BUILDER_IMAGE=docker.io/library/golang:1.22.5-alpine3.20 \
-  IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
-  IPTABLES_VERSION=1.8.9
+  # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L29
+  BIRD_VERSION=v0.3.3-208-g1e2ff99d \
+  BUILDER_IMAGE=docker.io/library/golang:1.22.7-alpine3.20 \
+  IPTABLES_WRAPPERS_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \
+  IPTABLES_VERSION=1.8.10
 
 FROM $BUILDER_IMAGE AS builder
 
