@@ -8,8 +8,9 @@ ARG \
   # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L29
   BIRD_VERSION=v0.3.3-208-g1e2ff99d \
   BUILDER_IMAGE=docker.io/library/golang:1.22.7-alpine3.20 \
-  IPTABLES_WRAPPERS_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \
-  IPTABLES_VERSION=1.8.10
+  IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
+  IPTABLES_VERSION=1.8.9
+
 
 FROM $BUILDER_IMAGE AS builder
 
