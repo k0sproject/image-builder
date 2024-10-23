@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.22.7-alpine3.19
+ARG BUILDER_IMAGE=docker.io/library/golang:1.23.2-alpine3.19
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.29.md#source-code
-ARG K8S_VERSION=1.29.9
-ARG K8S_HASH=4299af0d2d7370661e7d83f622f355fcfa06116f37ea8965f72c9257121c7c021bfee7c97fc813b2048fb38701346c452db5669b17dcd2aff8c00f98b37588d8
+ARG K8S_VERSION=1.29.10
+ARG K8S_HASH=783b848cd9ab5312dcca602dc5f9dd5da76f95891d35e02922e15466439758bbc141cc37c79690e18cdd648b8b9b3290b9569638d45eff6e62cd639286e8bec3
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -24,10 +24,10 @@ RUN --mount=type=tmpfs,target=/go/kubernetes/_output \
   set -euo pipefail \
   && du -sh /run/stage/kube-proxy-go-cache \
   && GOCACHE=/run/stage/kube-proxy-go-cache KUBE_BUILD_PLATFORMS="linux/$TARGETARCH" make -C /go/kubernetes \
-  WHAT='-trimpath -buildvcs=false cmd/kube-proxy' \
-  FORCE_HOST_GO=y \
-  KUBE_STATIC_OVERRIDES=kube-proxy \
-  KUBE_VERBOSE=9 \
+    WHAT='-trimpath -buildvcs=false cmd/kube-proxy' \
+    FORCE_HOST_GO=y \
+    KUBE_STATIC_OVERRIDES=kube-proxy \
+    KUBE_VERBOSE=9 \
   && mkdir -p /opt/stage \
   && mv /go/kubernetes/_output/local/bin/linux/*/kube-proxy /opt/stage/kube-proxy
 
@@ -54,37 +54,37 @@ RUN --mount=source=files,target=/run/stage/files,ro \
   && GOARCH="$TARGETARCH" make -C /go/iptables-wrapper build \
   && mv /go/iptables-wrapper/bin/iptables-wrapper /go/iptables-wrapper
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as baselayout
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS baselayout
 ARG TARGETARCH
 RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
   --mount=from=iptables-wrapper,source=/go/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
   set -euo pipefail \
   && case "${TARGETARCH-}" in \
-  amd64) export APK_ARCH=x86_64 ;; \
-  arm64) export APK_ARCH=aarch64 ;; \
-  arm) export APK_ARCH=armv7 ;; \
-  *) echo Unsupported target platform: "${TARGETARCH-}"; exit 1;; \
+    amd64) export APK_ARCH=x86_64 ;; \
+    arm64) export APK_ARCH=aarch64 ;; \
+    arm) export APK_ARCH=armv7 ;; \
+    *) echo Unsupported target platform: "${TARGETARCH-}"; exit 1;; \
   esac \
   && mkdir -p -- /opt/stage/etc/apk \
   && cp -a /etc/apk/repositories /run/stage/alpine/keys /opt/stage/etc/apk \
   && apk add --no-interactive --root /opt/stage --arch "$APK_ARCH" --initdb \
-  alpine-release \
-  busybox \
-  tzdata \
-  ca-certificates-bundle \
-  conntrack-tools \
-  ipset \
-  iptables \
-  iptables-legacy \
-  kmod \
+    alpine-release \
+    busybox \
+    tzdata \
+    ca-certificates-bundle \
+    conntrack-tools \
+    ipset \
+    iptables \
+    iptables-legacy \
+    kmod \
   && cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper /opt/stage \
   && chroot /opt/stage /iptables-wrapper-installer.sh \
   && sed -i -e 's,^D:/bin/sh ,D:,' -e '/D:alpine-keys/d' /opt/stage/lib/apk/db/installed \
   && bins="$(chroot /opt/stage /bin/busybox --list-full)" \
   && apk del --no-interactive --no-network --root /opt/stage --purge busybox alpine-keys \
   && for bin in $bins; do \
-  link="$(readlink "/opt/stage/$bin")"; \
-  [ "${link##*/}" != busybox ] || rm "/opt/stage/$bin"; \
+    link="$(readlink "/opt/stage/$bin")"; \
+    [ "${link##*/}" != busybox ] || rm "/opt/stage/$bin"; \
   done \
   && rm -r /opt/stage/etc/issue /opt/stage/etc/apk/repositories /opt/stage/var/cache
 

@@ -9,11 +9,9 @@ uses the new binary `iptables-wrapper`, so that it doesn't need a shell anymore.
 The following CVEs are flagged by trivy and do not affect the `kube-proxy`
 binary:
 
-* [CVE-2023-47108]  
-  <https://github.com/kubernetes/kubernetes/pull/121842>  
-  > This DOES NOT impact kubernetes, as we use OpenTelemetry only for tracing,
-  > and not for metrics. `go.opentelemetry.io/otel/sdk/metric` is not a
-  > dependency of this project.
+* [CVE-2024-45310]  
+  This is a runc vulnerability regarding container execution. Kube-proxy is not
+  concerned with container management at all.
 
 Notes:
 
@@ -32,6 +30,6 @@ Notes:
 
 [kube-proxy]: https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
 [iptables-distroless]: https://github.com/kubernetes/release/tree/master/images/build/distroless-iptables/distroless
-[CVE-2023-47108]: https://avd.aquasec.com/nvd/cve-2023-47108
+[CVE-2024-45310]: https://avd.aquasec.com/nvd/cve-2024-45310
 [nftables backend]: https://github.com/kubernetes/enhancements/issues/3866
 [KEP-3866]: https://github.com/kubernetes/enhancements/blob/master/keps/sig-network/3866-nftables-proxy/README.md
