@@ -1,7 +1,6 @@
-# docker buildx imagetools inspect docker.io/envoyproxy/envoy-distroless:v1.29.8
-FROM docker.io/envoyproxy/envoy-distroless:v1.29.8@sha256:000962566ef908117897e939c4b76add266e277c2b740965d881d08faf52b86e AS binary
+FROM docker.io/envoyproxy/envoy-distroless:v1.29.10@sha256:280fba1031c6610e3509cff146d9b10dfc78f83b79760248e5615580a571c5fc AS binary
 
-FROM gcr.io/distroless/base-debian12:nonroot@sha256:a9899ccd9868bbd8913c67f6807410abecf766bc9e3c718eb6248f7b3dfb9819
+FROM gcr.io/distroless/base-debian12:nonroot@sha256:c3584d9160af7bbc6a0a6089dc954d0938bb7f755465bb4ef4265aad0221343e
 
 COPY --from=binary /usr/local/bin/envoy* /usr/local/bin/
 COPY --from=binary /etc/envoy/envoy.yaml /etc/envoy/envoy.yaml
