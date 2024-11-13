@@ -1,11 +1,11 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.22.2-alpine3.19
+ARG BUILDER_IMAGE=docker.io/library/golang:1.23.3-alpine3.20
 
 ARG \
-  VERSION=1.11.3 \
-  GIT_COMMIT=a7ed346585e30b99317d36e4d007b7b19a228ea5 \
-  HASH=b64e0c5970000595a0682e9a87ebbad5ef0db790c1b6efbba6e341211bdf3299
+  VERSION=1.11.4 \
+  GIT_COMMIT=6e11ebddfc13bfca683fcbcae72cc4af6de47dd2 \
+  HASH=19c3b34f99921c129a19797710ddcc35f974655c99914cc319ccd0ba14f13e57
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as sources
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS sources
 ARG VERSION HASH
 RUN --mount=type=tmpfs,target=/tmp \
   set -euo pipefail \
@@ -14,7 +14,7 @@ RUN --mount=type=tmpfs,target=/tmp \
   && tar xf /tmp/src.tar.gz -C /go/src \
   && mv /go/src/coredns-"$VERSION" /go/src/coredns
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE as build
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build
 WORKDIR /go/src/coredns
 ARG VERSION GIT_COMMIT TARGETARCH
 ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOARCH="$TARGETARCH"
