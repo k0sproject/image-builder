@@ -132,7 +132,7 @@ jobs:
           tags: ${{ steps.image.outputs.image-name }}
 
       - name: Run Trivy vulnerability
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.29.0
         with:
           image-ref: ${{ steps.image.outputs.image-name }}
           ignore-unfixed: true
