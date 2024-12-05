@@ -1,9 +1,9 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.23.3-alpine3.20
+ARG BUILDER_IMAGE=docker.io/library/golang:1.23.4-alpine3.20
 
 ARG \
-  VERSION=1.11.4 \
-  GIT_COMMIT=6e11ebddfc13bfca683fcbcae72cc4af6de47dd2 \
-  HASH=19c3b34f99921c129a19797710ddcc35f974655c99914cc319ccd0ba14f13e57
+  VERSION=1.12.0 \
+  GIT_COMMIT=51e11f166ef6c247a78e9e15468647c593b79b9f \
+  HASH=71a585f7d41cd07a0839788bd3bb17bcc26501711c857eeae7cae2f1f654eeac
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS sources
 ARG VERSION HASH
@@ -28,7 +28,7 @@ FROM scratch
 ARG VERSION
 
 COPY --from=build /coredns /coredns
-COPY --from=gcr.io/distroless/static-debian12@sha256:41972110a1c1a5c0b6adb283e8aa092c43c31f7c5d79b8656fbffff2c3e61f05 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=gcr.io/distroless/static-debian12@sha256:5c7e2b465ac6a2a4e5f4f7f722ce43b147dabe87cb21ac6c4007ae5178a1fa58 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 53 53/udp
 ENTRYPOINT ["/coredns"]
