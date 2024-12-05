@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.23.2-alpine3.19
+ARG BUILDER_IMAGE=docker.io/library/golang:1.23.4-alpine3.20
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.29.md#source-code
-ARG K8S_VERSION=1.29.10
-ARG K8S_HASH=783b848cd9ab5312dcca602dc5f9dd5da76f95891d35e02922e15466439758bbc141cc37c79690e18cdd648b8b9b3290b9569638d45eff6e62cd639286e8bec3
+ARG K8S_VERSION=1.29.11
+ARG K8S_HASH=1ecfbcc9d7fee4c673d330e67a0329df2a2a8a4096c255ef65550e4631810f546ec4f8061ea829f0391d4845e22824998e6afe1bd0adf3c14ecda225bfdd1953
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -33,8 +33,8 @@ RUN --mount=type=tmpfs,target=/go/kubernetes/_output \
 
 FROM build-base AS iptables-wrapper
 
-ARG IPTABLES_WRAPPER_VERSION=5792812d9e5a5bb7f22d79d557bbfeece253343d
-ARG IPTABLES_WRAPPER_HASH=a1cc352145b052c15d1334414ec12e9b10630b5e768a5234b156af491997e08f
+ARG IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb
+ARG IPTABLES_WRAPPER_HASH=fde9ccd22b337fd297180cd21938c0a82030187fc29aabb6800472295d62752a
 
 RUN set -euo pipefail \
   && wget -qO iptables-wrapper.tar.gz "https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz" \

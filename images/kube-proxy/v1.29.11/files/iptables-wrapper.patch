@@ -11,11 +11,10 @@
  	$(GO) vet ./...
 --- iptables-wrapper-installer.sh
 +++ iptables-wrapper-installer.sh
-@@ -62,12 +62,15 @@ else
- fi
+@@ -85,11 +85,15 @@ done
  
- if [ "${1:-}" != "--no-sanity-check" ]; then
--    # Ensure dependencies are installed
+ if [ -z "${no_sanity_check}" ]; then
+     # Ensure dependencies are installed
 -    if ! version=$("${sbin}/iptables-nft" --version 2> /dev/null); then
 -        echo "ERROR: iptables-nft is not installed" 1>&2
 -        exit 1
