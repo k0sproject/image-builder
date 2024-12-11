@@ -1,4 +1,4 @@
-ARG KUBE_ROUTER_VERSION=v2.2.1
+ARG KUBE_ROUTER_VERSION=v2.4.1
 FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} AS binaries
 
 FROM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
@@ -6,13 +6,10 @@ RUN apk add --no-interactive --no-cache git make curl
 
 FROM build-base AS build-gobgp
 
-# https://github.com/cloudnativelabs/kube-router/blob/v2.2.1/Makefile#L31
+# https://github.com/cloudnativelabs/kube-router/blob/v2.4.1/Makefile#L31
 RUN git -c advice.detachedHead=false clone -b v3.29.0 https://github.com/osrg/gobgp.git /gobgp
 
-RUN cd /gobgp && \
-    go get -u google.golang.org/grpc@v1.58.3 && \
-    go mod tidy && \
-    CGO_ENABLED=0 go build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
+RUN CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
