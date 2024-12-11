@@ -8,21 +8,27 @@ ENV GOTOOLCHAIN=local
 FROM build-base AS build-gobgp
 
 # https://github.com/cloudnativelabs/kube-router/blob/v2.4.1/Makefile#L31
-RUN git -c advice.detachedHead=false clone -b v3.29.0 https://github.com/osrg/gobgp.git /gobgp
+RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
+  git -c advice.detachedHead=false clone -b v3.29.0 https://github.com/osrg/gobgp.git /gobgp \
+  && go -C /gobgp mod download
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   --mount=type=cache,id=gobgp-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
   CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
 
-RUN git -c advice.detachedHead=false clone --branch ${KUBE_ROUTER_VERSION} https://github.com/cloudnativelabs/kube-router.git /kube-router
+RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
+  git -c advice.detachedHead=false clone --branch ${KUBE_ROUTER_VERSION} https://github.com/cloudnativelabs/kube-router.git /kube-router \
+  && go -C /kube-router mod download
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   --mount=type=cache,id=kube-router-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
   cd /kube-router && \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
     export BUILD_DATE=$(git log -1 --date=format:%Y-%m-%dT%H:%M:%S%z --format=%cd) && \
