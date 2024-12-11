@@ -10,14 +10,20 @@ FROM build-base AS build-gobgp
 # https://github.com/cloudnativelabs/kube-router/blob/v2.4.1/Makefile#L31
 RUN git -c advice.detachedHead=false clone -b v3.29.0 https://github.com/osrg/gobgp.git /gobgp
 
-RUN CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
+ARG TARGETARCH
+RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
+  --mount=type=cache,id=gobgp-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
 
 RUN git -c advice.detachedHead=false clone --branch ${KUBE_ROUTER_VERSION} https://github.com/cloudnativelabs/kube-router.git /kube-router
 
-RUN cd /kube-router && \
+ARG TARGETARCH
+RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
+  --mount=type=cache,id=kube-router-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  cd /kube-router && \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
     export BUILD_DATE=$(git log -1 --date=format:%Y-%m-%dT%H:%M:%S%z --format=%cd) && \
     CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/cloudnativelabs/kube-router/v2/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/v2/pkg/version.BuildDate=$BUILD_DATE" \
@@ -37,7 +43,7 @@ RUN set -euo pipefail \
 
 ARG TARGETARCH
 RUN --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
-  --mount=type=cache,id=iptables-wrapper-go-cache-$TARGETARCH,target=/root/.cache/go-build \
+  --mount=type=cache,id=iptables-wrapper-gocache-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
   du -sh /root/.cache/go-build \
   && GOARCH="$TARGETARCH" make -C /go/iptables-wrapper build \
