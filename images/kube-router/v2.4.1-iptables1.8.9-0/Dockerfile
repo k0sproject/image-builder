@@ -1,7 +1,7 @@
 ARG KUBE_ROUTER_VERSION=v2.4.1
 FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} AS binaries
 
-FROM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
 ENV GOTOOLCHAIN=local
 
@@ -16,7 +16,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   --mount=type=cache,id=gobgp-gocache-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -trimpath -buildvcs=false -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
+  GOARCH="$TARGETARCH" CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -trimpath -buildvcs=false -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
@@ -29,10 +29,10 @@ ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   --mount=type=cache,id=kube-router-gocache-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  cd /kube-router && \
-    export GIT_COMMIT=$(git describe --tags --dirty) && \
-    export BUILD_DATE=$(git log -1 --date=format:%Y-%m-%dT%H:%M:%S%z --format=%cd) && \
-    CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/cloudnativelabs/kube-router/v2/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/v2/pkg/version.BuildDate=$BUILD_DATE" \
+  cd /kube-router \
+  && export GIT_COMMIT=$(git describe --tags --dirty) \
+  && export BUILD_DATE=$(git log -1 --date=format:%Y-%m-%dT%H:%M:%S%z --format=%cd) \
+  && GOARCH="$TARGETARCH" CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/cloudnativelabs/kube-router/v2/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/v2/pkg/version.BuildDate=$BUILD_DATE" \
     -trimpath -buildvcs=false -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
 
 FROM build-base AS build-iptables-wrapper
