@@ -3,6 +3,7 @@ FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} AS binaries
 
 FROM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
+ENV GOTOOLCHAIN=local
 
 FROM build-base AS build-gobgp
 
