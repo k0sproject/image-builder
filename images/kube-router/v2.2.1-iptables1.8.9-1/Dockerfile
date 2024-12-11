@@ -50,6 +50,8 @@ RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/
   apk add --no-cache \
     'iptables=~1.8.9' \
     'ip6tables=~1.8.9' \
+    'libcrypto3=~3.1.7-r1' \
+    'libssl3=~3.1.7-r1' \
     ipset \
     iproute2 \
     ipvsadm \
