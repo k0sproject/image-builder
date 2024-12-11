@@ -16,7 +16,7 @@ ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   --mount=type=cache,id=gobgp-gocache-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
+  CGO_ENABLED=0 go -C /gobgp build -ldflags "-s -w" -trimpath -buildvcs=false -o /usr/local/bin/gobgp /gobgp/cmd/gobgp
 
 FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
@@ -33,7 +33,7 @@ RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
     export GIT_COMMIT=$(git describe --tags --dirty) && \
     export BUILD_DATE=$(git log -1 --date=format:%Y-%m-%dT%H:%M:%S%z --format=%cd) && \
     CGO_ENABLED=0 go build -ldflags "-s -w -X github.com/cloudnativelabs/kube-router/v2/pkg/version.Version=$GIT_COMMIT -X github.com/cloudnativelabs/kube-router/v2/pkg/version.BuildDate=$BUILD_DATE" \
-    -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
+    -trimpath -buildvcs=false -o /usr/local/bin/kube-router /kube-router/cmd/kube-router
 
 FROM build-base AS build-iptables-wrapper
 
