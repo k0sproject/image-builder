@@ -27,18 +27,27 @@ RUN cd /kube-router && \
 
 FROM build-base AS build-iptables-wrapper
 
-# https://github.com/cloudnativelabs/kube-router/blob/master/Dockerfile#L17
-# This is the latest commit on the master branch.
-ENV IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef
-RUN git -c advice.detachedHead=false clone https://github.com/kubernetes-sigs/iptables-wrappers.git /iptables-wrappers
-RUN cd /iptables-wrappers \
-    && git -c advice.detachedHead=false checkout "${IPTABLES_WRAPPERS_VERSION}" \
-    && make build \
-    && test -x bin/iptables-wrapper \
-    && test -x iptables-wrapper-installer.sh
+ARG IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb
+ARG IPTABLES_WRAPPER_HASH=fde9ccd22b337fd297180cd21938c0a82030187fc29aabb6800472295d62752a
+
+RUN set -euo pipefail \
+  && wget -qO iptables-wrapper.tar.gz "https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz" \
+  && { echo "${IPTABLES_WRAPPER_HASH} *iptables-wrapper.tar.gz" | sha256sum -c -; } \
+  && mkdir -p /go/iptables-wrapper \
+  && tar xf iptables-wrapper.tar.gz --strip-components=1 -C /go/iptables-wrapper \
+  && rm iptables-wrapper.tar.gz
+
+ARG TARGETARCH
+RUN --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
+  --mount=type=cache,id=iptables-wrapper-go-cache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  du -sh /root/.cache/go-build \
+  && GOARCH="$TARGETARCH" make -C /go/iptables-wrapper build \
+  && mv /go/iptables-wrapper/bin/iptables-wrapper /go/iptables-wrapper
 
 FROM docker.io/library/alpine:3.18.9
-RUN apk add --no-cache \
+RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
+  apk add --no-cache \
     'iptables=~1.8.9' \
     'ip6tables=~1.8.9' \
     ipset \
@@ -46,13 +55,12 @@ RUN apk add --no-cache \
     ipvsadm \
     conntrack-tools \
     curl \
-    bash && \
-    mkdir -p /var/lib/gobgp
+    bash \
+  && mkdir -p /var/lib/gobgp \
+  && (cd /run/stage/iptables-wrapper && ./iptables-wrapper-installer.sh --no-sanity-check --no-cleanup)
 
 COPY --from=build-kube-router /usr/local/bin/kube-router /usr/local/bin/
 COPY --from=build-gobgp /usr/local/bin/gobgp /usr/local/bin/
-COPY --from=build-iptables-wrapper /iptables-wrappers/bin/iptables-wrapper /
-COPY --from=build-iptables-wrapper /iptables-wrappers/iptables-wrapper-installer.sh /
 COPY --from=binaries /etc/motd-kube-router.sh /etc/motd-kube-router.sh
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
