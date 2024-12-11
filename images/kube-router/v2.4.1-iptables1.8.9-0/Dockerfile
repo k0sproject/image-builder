@@ -1,5 +1,4 @@
 ARG KUBE_ROUTER_VERSION=v2.4.1
-FROM docker.io/cloudnativelabs/kube-router:${KUBE_ROUTER_VERSION} AS binaries
 
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
@@ -72,8 +71,8 @@ RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/
   && (cd /run/stage/iptables-wrapper && ./iptables-wrapper-installer.sh --no-sanity-check --no-cleanup)
 
 COPY --from=build-kube-router /usr/local/bin/kube-router /usr/local/bin/
+COPY --from=build-kube-router /kube-router/build/image-assets/motd-kube-router.sh /etc/
 COPY --from=build-gobgp /usr/local/bin/gobgp /usr/local/bin/
-COPY --from=binaries /etc/motd-kube-router.sh /etc/motd-kube-router.sh
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
