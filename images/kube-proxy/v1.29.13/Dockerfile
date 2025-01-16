@@ -18,10 +18,12 @@ RUN set -euo pipefail \
   && rm kubernetes-src.tar.gz
 
 ARG TARGETARCH
-RUN --mount=type=tmpfs,target=/go/kubernetes/_output \
+RUN --mount=source=files,target=/run/stage/files,ro \
+  --mount=type=tmpfs,target=/go/kubernetes/_output \
   --mount=type=cache,id=kube-proxy-go-cache-$TARGETARCH,target=/run/stage/kube-proxy-go-cache \
   --network=none \
   set -euo pipefail \
+  && { [ "$TARGETARCH" != riscv64 ] || patch -d /go/kubernetes -p0 </run/stage/files/riscv64.patch; } \
   && du -sh /run/stage/kube-proxy-go-cache \
   && GOCACHE=/run/stage/kube-proxy-go-cache KUBE_BUILD_PLATFORMS="linux/$TARGETARCH" make -C /go/kubernetes \
     WHAT='-trimpath -buildvcs=false cmd/kube-proxy' \
@@ -63,6 +65,7 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
     amd64) export APK_ARCH=x86_64 ;; \
     arm64) export APK_ARCH=aarch64 ;; \
     arm) export APK_ARCH=armv7 ;; \
+    riscv64) export APK_ARCH=riscv64 ;; \
     *) echo Unsupported target platform: "${TARGETARCH-}"; exit 1;; \
   esac \
   && mkdir -p -- /opt/stage/etc/apk \
