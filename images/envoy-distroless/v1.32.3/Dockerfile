@@ -1,6 +1,6 @@
-FROM docker.io/envoyproxy/envoy-distroless:v1.32.2@sha256:11de2e75de4dce39e38ff8da8077096ba9f6f784d6f6866a663fe8d2c809227e AS binary
+FROM docker.io/envoyproxy/envoy-distroless:v1.32.3@sha256:375aab0d80b3c0e1b42a776b4cb1743ed79012032051d2da19cbc93ea884fb81 AS binary
 
-FROM gcr.io/distroless/base-debian12:nonroot@sha256:6d4a4f40e93615df1677463ca56456379cc3a4e2359308c9e72bc60ffc4a12a9
+FROM gcr.io/distroless/base-debian12:nonroot@sha256:97d15218016debb9b6700a8c1c26893d3291a469852ace8d8f7d15b2f156920f
 
 COPY --from=binary /usr/local/bin/envoy* /usr/local/bin/
 COPY --from=binary /etc/envoy/envoy.yaml /etc/envoy/envoy.yaml
