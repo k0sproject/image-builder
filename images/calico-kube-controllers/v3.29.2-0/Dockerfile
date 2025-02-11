@@ -1,10 +1,10 @@
 # https://github.com/projectcalico/calico/blob/v3.29.1/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.29.1 \
-  HASH=17894ed9f7487f1418e599fdeff5db9047374dee12d560114e25ff9147a455c3
+  VERSION=3.29.2 \
+  HASH=0734dbd02ceb1899dd67128fdb32255a7b79680e3af0cca6dfcee9639c760992
 
-FROM docker.io/library/golang:1.22.10-alpine3.20 as builder
+FROM docker.io/library/golang:1.23.6-alpine3.20 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
