@@ -76,7 +76,7 @@ jobs:
           esac
 
           case "$FOLDER" in
-            apiserver-network-proxy-agent*|coredns*|kube-proxy*|kube-router*)
+            apiserver-network-proxy-agent*|coredns*|kube-proxy*|kube-router*|pause*)
               platforms="$platforms,linux/riscv64"
               ;;
           esac
