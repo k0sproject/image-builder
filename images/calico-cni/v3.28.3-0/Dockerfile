@@ -1,13 +1,14 @@
-# https://github.com/projectcalico/calico/blob/v3.28.2/cni-plugin/Dockerfile.amd64
-
+# https://github.com/projectcalico/calico/blob/v3.28.3/cni-plugin/Dockerfile
 ARG \
-  VERSION=3.28.2 \
-  HASH=f02a0e99e060850bd9050d4c94d37df899911a5e357e1d26e1b5b79a923bb389 \
-  # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L53
+  VERSION=3.28.3 \
+  HASH=2b3348fb9e022bb6703c460789bd9327d9062c6854262e263fd409ff368034e7 \
+  # https://github.com/projectcalico/calico/blob/v3.28.3/metadata.mk#L53
+  # https://github.com/projectcalico/flannel-cni-plugin/tags
   FLANNEL_VERSION=v1.2.0-flannel2-go1.22.7 \
-  # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L52
+  # https://github.com/projectcalico/calico/blob/v3.28.3/metadata.mk#L52
+  # https://github.com/projectcalico/containernetworking-plugins/tags
   CNI_VERSION=v1.1.1-calico+go-1.22.7 \
-  BUILDER_IMAGE=docker.io/library/golang:1.22.7-alpine3.20
+  BUILDER_IMAGE=docker.io/library/golang:1.22.12-alpine3.20
 
 FROM $BUILDER_IMAGE AS builder
 
