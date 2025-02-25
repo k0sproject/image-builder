@@ -75,8 +75,9 @@ jobs:
             etcd*) platforms=linux/amd64,linux/arm64;;
           esac
 
+          # TODO: fix apiserver-network-proxy-agent*
           case "$FOLDER" in
-            apiserver-network-proxy-agent*|coredns*|kube-proxy*|kube-router*|pause*)
+            coredns*|kube-proxy*|kube-router*|pause*)
               platforms="$platforms,linux/riscv64"
               ;;
           esac
