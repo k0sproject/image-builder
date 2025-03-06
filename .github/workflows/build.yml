@@ -77,7 +77,7 @@ jobs:
 
           # TODO: fix apiserver-network-proxy-agent*
           case "$FOLDER" in
-            coredns*|kube-proxy*|kube-router*|pause*)
+            coredns*|kube-proxy*|kube-router*|pause*|k0s-distroless*)
               platforms="$platforms,linux/riscv64"
               ;;
           esac
