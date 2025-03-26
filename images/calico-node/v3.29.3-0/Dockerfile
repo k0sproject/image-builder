@@ -1,13 +1,13 @@
-# https://github.com/projectcalico/calico/blob/v3.29.2/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.29.3/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.29.2 \
-  HASH=0734dbd02ceb1899dd67128fdb32255a7b79680e3af0cca6dfcee9639c760992 \
+  VERSION=3.29.3 \
+  HASH=66d49b3af986944e58fede252a2c164251a63f43894181ed7401a6e11dcd8421 \
   IPSET_VERSION=7.17 \
   IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8 \
-  # https://github.com/projectcalico/calico/blob/v3.29.2/metadata.mk#L36
+  # https://github.com/projectcalico/calico/blob/v3.29.3/metadata.mk#L36
   BIRD_VERSION=v0.3.3-211-g9111ec3c \
-  BUILDER_IMAGE=docker.io/library/golang:1.23.6-alpine3.20 \
+  BUILDER_IMAGE=docker.io/library/golang:1.23.7-alpine3.20 \
   IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
   IPTABLES_VERSION=1.8.9
 
@@ -107,6 +107,7 @@ COPY --from=bird /bird* /usr/bin/
 # Copy iptables and wrappers
 COPY --from=iptables /usr/local/sbin/xtables-* /sbin/
 COPY --from=iptables /usr/local/sbin/iptables* /sbin/
+COPY --from=iptables /usr/local/sbin/ip6tables* /sbin/
 COPY --from=iptables-wrapper /iptables-wrappers/bin/iptables-wrapper /
 COPY --from=iptables-wrapper /iptables-wrappers/iptables-wrapper-installer.sh /
 
