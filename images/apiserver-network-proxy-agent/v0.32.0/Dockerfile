@@ -1,19 +1,31 @@
-# Build the proxy-agent binary
-FROM golang:1.22.12 AS builder
-RUN mkdir /go/src/sigs.k8s.io
-# version skew policy for konnectivity is described here https://github.com/kubernetes-sigs/apiserver-network-proxy?tab=readme-ov-file#versioning-and-releases
-ARG APISERVER_AGENT_VERSION=0.31.2
+ARG \
+  VERSION=0.32.0 \
+  HASH=03f34ace31742fbc483ac579aacc7cc86eb2c77c3a05a692ceba1c5dbd8c1ab0
 
-RUN git clone  -b v$APISERVER_AGENT_VERSION https://github.com/kubernetes-sigs/apiserver-network-proxy.git /go/src/sigs.k8s.io/apiserver-network-proxy 
-# Copy in the go src
-WORKDIR /go/src/sigs.k8s.io/apiserver-network-proxy/proxy-agent
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.2-alpine3.21 AS build
+ENV CGO_ENABLED=0 GOTELEMETRY=off
+WORKDIR /go/src/kubernetes-sigs/apiserver-network-proxy
 
-# Build
-ARG ARCH
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -v -a -ldflags '-extldflags "-static"' -o proxy-agent sigs.k8s.io/apiserver-network-proxy/cmd/agent
+ARG VERSION HASH
+RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
+  --mount=type=tmpfs,target=/tmp \
+  set -e \
+  && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
+  && { printf '%s */tmp/src.tar.gz' "$HASH" | sha256sum -c -; } \
+  && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && go mod download -x
 
-# Copy the loader into a thin image
-FROM gcr.io/distroless/static-debian11
-WORKDIR /
-COPY --from=builder /go/src/sigs.k8s.io/apiserver-network-proxy/proxy-agent .
+ARG TARGETARCH
+ENV GOARCH=$TARGETARCH
+RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod,ro \
+  --mount=type=cache,id=konnectivity-agent-go-cache-$TARGETARCH,target=/root/.cache/go-build \
+  --mount=type=tmpfs,target=/tmp \
+  --network=none \
+  go build \
+  -v -mod=readonly -trimpath -buildvcs=false \
+  -ldflags "-s -w" \
+  ./cmd/agent
+
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:c0f429e16b13e583da7e5a6ec20dd656d325d88e6819cafe0adb0828976529dc
+COPY --from=build /go/src/kubernetes-sigs/apiserver-network-proxy/agent /proxy-agent
 ENTRYPOINT ["/proxy-agent"]
