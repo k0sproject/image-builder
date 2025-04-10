@@ -1,6 +1,8 @@
 ARG \
   VERSION=0.32.0 \
-  HASH=03f34ace31742fbc483ac579aacc7cc86eb2c77c3a05a692ceba1c5dbd8c1ab0
+  HASH=03f34ace31742fbc483ac579aacc7cc86eb2c77c3a05a692ceba1c5dbd8c1ab0 \
+  DEFAULT_BASEIMAGE=gcr.io/distroless/static-debian12:nonroot@sha256:c0f429e16b13e583da7e5a6ec20dd656d325d88e6819cafe0adb0828976529dc \
+  RISCV_BASEIMAGE=ghcr.io/go-riscv/distroless/static-unstable:latest@sha256:af5b10695a340493ec1807c4ad97489dc1018044785fc09729dcf971a592ccf7
 
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.2-alpine3.21 AS build
 ENV CGO_ENABLED=0 GOTELEMETRY=off
@@ -26,6 +28,11 @@ RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod,ro \
   -ldflags "-s -w" \
   ./cmd/agent
 
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:c0f429e16b13e583da7e5a6ec20dd656d325d88e6819cafe0adb0828976529dc
+FROM $DEFAULT_BASEIMAGE AS final-amd64
+FROM $DEFAULT_BASEIMAGE AS final-arm64
+FROM $DEFAULT_BASEIMAGE AS final-arm
+FROM $RISCV_BASEIMAGE   AS final-riscv64
+
+FROM final-$TARGETARCH
 COPY --from=build /go/src/kubernetes-sigs/apiserver-network-proxy/agent /proxy-agent
 ENTRYPOINT ["/proxy-agent"]
