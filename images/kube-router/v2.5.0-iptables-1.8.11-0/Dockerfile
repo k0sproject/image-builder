@@ -1,12 +1,12 @@
-ARG KUBE_ROUTER_VERSION=v2.4.1
+ARG KUBE_ROUTER_VERSION=v2.5.0
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.23.4-alpine3.20 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.2-alpine3.21 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
 ENV GOTOOLCHAIN=local
 
 FROM build-base AS build-gobgp
 
-# https://github.com/cloudnativelabs/kube-router/blob/v2.4.1/Makefile#L31
+# https://github.com/cloudnativelabs/kube-router/blob/v2.5.0/Makefile#L31
 RUN --mount=type=cache,id=kube-router-gomodcache,target=/go/pkg/mod \
   git -c advice.detachedHead=false clone -b v3.29.0 https://github.com/osrg/gobgp.git /gobgp \
   && go -C /gobgp mod download
@@ -54,13 +54,13 @@ RUN --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
   && GOARCH="$TARGETARCH" make -C /go/iptables-wrapper build \
   && mv /go/iptables-wrapper/bin/iptables-wrapper /go/iptables-wrapper
 
-FROM docker.io/library/alpine:3.18.9
+FROM docker.io/library/alpine:3.21.3
 RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
   apk add --no-cache \
-    'iptables=~1.8.9' \
-    'ip6tables=~1.8.9' \
-    'libcrypto3=~3.1.7-r1' \
-    'libssl3=~3.1.7-r1' \
+    'iptables=~1.8.11' \
+    'ip6tables=~1.8.11' \
+    'libcrypto3=~3.3.3-r0' \
+    'libssl3=~3.3.3-r0' \
     ipset \
     iproute2 \
     ipvsadm \
