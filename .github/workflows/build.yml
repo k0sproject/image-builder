@@ -62,7 +62,6 @@ jobs:
           registry=ttl.sh
           name="$GITHUB_REPOSITORY_OWNER-${FOLDER%%/*}-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           tag=1d
-          platforms=linux/amd64,linux/arm64,linux/arm/v7
 
           if [ "$GITHUB_REPOSITORY_OWNER" = k0sproject ] && [ "$GITHUB_REF" = refs/heads/main ]; then
             registry=quay.io
@@ -70,23 +69,31 @@ jobs:
             tag="${FOLDER#*/}"
           fi
 
+          defaultPlatforms=(linux/amd64 linux/arm64 linux/arm/v7 linux/riscv64)
+
           case "$FOLDER" in
-            envoy*) platforms=linux/amd64,linux/arm64;;
-            etcd*) platforms=linux/amd64,linux/arm64;;
+          envoy*) unsupportedPlatforms=(linux/arm/v7 linux/riscv64) ;;
+          actions-runner* | calico*) unsupportedPlatforms=(linux/riscv64) ;;
+          *) unsupportedPlatforms=() ;;
           esac
 
-          # TODO: fix apiserver-network-proxy-agent*
-          case "$FOLDER" in
-            coredns*|kube-proxy*|kube-router*|pause*|k0s-distroless*)
-              platforms="$platforms,linux/riscv64"
-              ;;
-          esac
+          buildPlatforms=()
+          for p in "${defaultPlatforms[@]}"; do
+            skip=0
+            for up in "${unsupportedPlatforms[@]}"; do
+              if [ "$p" = "$up" ]; then
+                skip=1
+                break
+              fi
+            done
+            [ $skip -ne 0 ] || buildPlatforms+=("$p")
+          done
 
           trivyResults="${FOLDER//\//-}-trivy.sarif"
 
           {
             echo "image-name=$registry/$name:$tag"
-            echo "platforms=$platforms"
+            echo "platforms=$(IFS=',';  echo "${buildPlatforms[*]}")"
             echo "trivy-results=$trivyResults"
           } | tee -- "$GITHUB_OUTPUT"
 
