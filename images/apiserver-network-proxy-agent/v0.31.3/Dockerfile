@@ -2,7 +2,7 @@
 FROM golang:1.22.12 AS builder
 RUN mkdir /go/src/sigs.k8s.io
 # version skew policy for konnectivity is described here https://github.com/kubernetes-sigs/apiserver-network-proxy?tab=readme-ov-file#versioning-and-releases
-ARG APISERVER_AGENT_VERSION=0.31.2
+ARG APISERVER_AGENT_VERSION=0.31.3
 
 RUN git clone  -b v$APISERVER_AGENT_VERSION https://github.com/kubernetes-sigs/apiserver-network-proxy.git /go/src/sigs.k8s.io/apiserver-network-proxy 
 # Copy in the go src
@@ -13,7 +13,7 @@ ARG ARCH
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -v -a -ldflags '-extldflags "-static"' -o proxy-agent sigs.k8s.io/apiserver-network-proxy/cmd/agent
 
 # Copy the loader into a thin image
-FROM gcr.io/distroless/static-debian11
+FROM quay.io/k0sproject/k0s-distroless:3.21
 WORKDIR /
 COPY --from=builder /go/src/sigs.k8s.io/apiserver-network-proxy/proxy-agent .
 ENTRYPOINT ["/proxy-agent"]
