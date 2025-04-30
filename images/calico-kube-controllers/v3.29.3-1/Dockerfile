@@ -4,7 +4,7 @@ ARG \
   VERSION=3.29.3 \
   HASH=66d49b3af986944e58fede252a2c164251a63f43894181ed7401a6e11dcd8421
 
-FROM docker.io/library/golang:1.23.6-alpine3.20 AS builder
+FROM docker.io/library/golang:1.24.2-alpine3.21 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \

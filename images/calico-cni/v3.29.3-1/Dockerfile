@@ -14,7 +14,7 @@ ARG \
   # https://github.com/projectcalico/calico/blob/v3.29.3/cni-plugin/Makefile#L150
   # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2025-03-26
   CNI_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
-  BUILDER_IMAGE=docker.io/library/golang:1.23.7-alpine3.20
+  BUILDER_IMAGE=docker.io/library/golang:1.24.2-alpine3.21
 
 FROM $BUILDER_IMAGE AS builder
 

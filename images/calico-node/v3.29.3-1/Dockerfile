@@ -3,13 +3,13 @@
 ARG \
   VERSION=3.29.3 \
   HASH=66d49b3af986944e58fede252a2c164251a63f43894181ed7401a6e11dcd8421 \
-  IPSET_VERSION=7.17 \
-  IPSET_HASH=be49c9ff489dd6610cad6541e743c3384eac96e9f24707da7b3929d8f2ac64d8 \
+  IPSET_VERSION=7.23 \
+  IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
   # https://github.com/projectcalico/calico/blob/v3.29.3/metadata.mk#L36
   BIRD_VERSION=v0.3.3-211-g9111ec3c \
-  BUILDER_IMAGE=docker.io/library/golang:1.23.7-alpine3.20 \
+  BUILDER_IMAGE=docker.io/library/golang:1.24.2-alpine3.20 \
   IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
-  IPTABLES_VERSION=1.8.9
+  IPTABLES_VERSION=1.8.11
 
 FROM $BUILDER_IMAGE AS builder
 
@@ -25,14 +25,14 @@ RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X 
 
 # For currently unknown reason, compiling in alpine 3.20 creates binary
 # which always segfaults. So we need to compile in alpine 3.19 still.
-FROM docker.io/library/alpine:3.19 AS ipset
+FROM docker.io/library/alpine:3.21 AS ipset
 RUN apk add --no-cache \
   build-base pkgconf curl \
   libmnl-dev libmnl-static
 
 ARG IPSET_VERSION IPSET_HASH
 RUN curl -sSLo ipset.tar.bz2 "http://ipset.netfilter.org/ipset-$IPSET_VERSION.tar.bz2" \
-  && { echo "$IPSET_HASH *ipset.tar.bz2" | sha256sum -c -; } \
+  && { echo "$IPSET_HASH *ipset.tar.bz2" | sha512sum -c -; } \
   && mkdir -p /src/ipset && tar xf "ipset.tar.bz2" --strip-components=1 -C /src/ipset \
   && rm -- "ipset.tar.bz2"
 
@@ -48,7 +48,7 @@ RUN ipset -h
 FROM docker.io/calico/bird:$BIRD_VERSION-$TARGETARCH$TARGETVARIANT AS bird
 
 # Build iptables
-FROM docker.io/library/alpine:3.20 AS iptables
+FROM docker.io/library/alpine:3.21 AS iptables
 ARG IPTABLES_VERSION
 
 RUN apk add build-base curl pkgconf \
@@ -60,8 +60,12 @@ RUN curl --proto '=https' --tlsv1.2 -L https://www.netfilter.org/projects/iptabl
 	| tar -C / -Jx
 
 ARG TARGET_OS
+# -D__UAPI_DEF_ETHHDR is required to build on musl.
+# If this CFLAG isn't defined, itpables will define it in include/xtables.h
+# and will have a conflict with musl, which defines it in
+# /usr/include/netinet/if_ether.h
 RUN cd /iptables-$IPTABLES_VERSION && \
-  CFLAGS="-Os" ./configure --sysconfdir=/etc --enable-static --disable-shared --without-kernel --disable-devel
+  CFLAGS="-Os -D__UAPI_DEF_ETHHDR=0" ./configure --sysconfdir=/etc --enable-static --disable-shared --without-kernel --disable-devel
 
 RUN make -j$(nproc) -C /iptables-$IPTABLES_VERSION LDFLAGS=-all-static
 RUN make -j$(nproc) -C /iptables-$IPTABLES_VERSION install
