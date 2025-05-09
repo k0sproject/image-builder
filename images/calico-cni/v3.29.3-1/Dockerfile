@@ -61,6 +61,8 @@ RUN GOFLAGS='-buildvcs=false' CGO_ENABLED=0 ./build_linux.sh -ldflags "-X github
 
 
 FROM scratch
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/projectcalico/calico"
 COPY --from=builder /out/ /
 COPY --from=flannel /go/flannel/dist/flannel-* /opt/cni/bin/flannel
 COPY --from=cni-bins /go/cni/bin/* /opt/cni/bin/

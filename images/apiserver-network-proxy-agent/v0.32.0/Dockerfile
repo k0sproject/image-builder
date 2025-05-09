@@ -34,5 +34,7 @@ FROM $DEFAULT_BASEIMAGE AS final-arm
 FROM $RISCV_BASEIMAGE   AS final-riscv64
 
 FROM final-$TARGETARCH
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/kubernetes-sigs/apiserver-network-proxy"
 COPY --from=build /go/src/kubernetes-sigs/apiserver-network-proxy/agent /proxy-agent
 ENTRYPOINT ["/proxy-agent"]

@@ -10,6 +10,8 @@ RUN wget https://github.com/kubernetes/kubernetes/raw/$HASH/build/pause/linux/pa
 RUN gcc -Os -static -DVERSION=$VERSION -o pause pause.c && strip pause
 
 FROM scratch
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/kubernetes/kubernetes"
 COPY --from=build /pause /pause
 USER 65535:65535
 ENTRYPOINT ["/pause"]
