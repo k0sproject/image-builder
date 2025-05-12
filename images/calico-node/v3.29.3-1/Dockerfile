@@ -86,6 +86,8 @@ RUN cd /iptables-wrappers \
 
 # Build the image based on alpine
 FROM docker.io/library/alpine:3.20
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/projectcalico/calico"
 ARG TARGETARCH
 
 RUN apk add --no-cache bash iputils iproute2 conntrack-tools runit ca-certificates

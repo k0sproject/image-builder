@@ -55,6 +55,8 @@ RUN --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
   && mv /go/iptables-wrapper/bin/iptables-wrapper /go/iptables-wrapper
 
 FROM docker.io/library/alpine:3.21.3
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/cloudnativelabs/kube-router"
 RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
   apk add --no-cache \
     'iptables=~1.8.11' \

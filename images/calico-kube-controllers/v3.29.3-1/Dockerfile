@@ -29,6 +29,8 @@ RUN mkdir /out/licenses && cp -a kube-controllers/LICENSE /out/licenses/
 RUN mkdir /out/status && touch /out/status/status.json && chown 999 /out/status/status.json
 
 FROM scratch
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/projectcalico/calico"
 COPY --from=builder /out/ /
 USER 999
 ENTRYPOINT ["/usr/bin/kube-controllers"]

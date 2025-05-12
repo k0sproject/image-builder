@@ -93,6 +93,8 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
   && rm -r /opt/stage/etc/issue /opt/stage/etc/apk/repositories /opt/stage/var/cache
 
 FROM scratch
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/kubernetes/kubernetes"
 COPY --from=baselayout /opt/stage /
 COPY --from=kube-proxy /opt/stage/kube-proxy /usr/local/bin/kube-proxy
 
