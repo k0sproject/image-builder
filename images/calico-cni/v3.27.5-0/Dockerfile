@@ -1,12 +1,12 @@
 # https://github.com/projectcalico/calico/blob/v3.27.3/cni-plugin/Dockerfile.amd64
 
 ARG \
-  VERSION=3.27.3 \
-  HASH=d11a32919bff389f642af5df8180ad3cec586030decd35adb2a7d4a8aa3b298e
+  VERSION=3.27.5 \
+  HASH=f9cca65b96ab05732ed1902afd0f3086be54d6bb6b47c86a289ecf4ea5cdc25d
 
 FROM docker.io/calico/cni:v$VERSION as upstream
 
-FROM docker.io/library/golang:1.22.2-alpine3.18 as builder
+FROM docker.io/library/golang:1.22.12-alpine3.20 as builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \

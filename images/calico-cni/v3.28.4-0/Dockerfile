@@ -1,13 +1,18 @@
-# https://github.com/projectcalico/calico/blob/v3.28.2/cni-plugin/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.28.4/cni-plugin/Dockerfile.amd64
 
 ARG \
-  VERSION=3.28.2 \
-  HASH=f02a0e99e060850bd9050d4c94d37df899911a5e357e1d26e1b5b79a923bb389 \
-  # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L53
-  FLANNEL_VERSION=v1.2.0-flannel2-go1.22.7 \
-  # https://github.com/projectcalico/calico/blob/v3.28.2/metadata.mk#L52
-  CNI_VERSION=v1.1.1-calico+go-1.22.7 \
-  BUILDER_IMAGE=docker.io/library/golang:1.22.7-alpine3.20
+  VERSION=3.28.4 \
+  HASH=a296906bd6b38187ba15669139dd6bf8bd26d0b191e9773fa0e85a5cc2d0b5e9 \
+  # https://github.com/projectcalico/calico/blob/v3.28.4/metadata.mk#L52-L53
+  # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
+  # v3.28.4 was released 2025-04-16: https://github.com/projectcalico/calico/releases/tag/v3.28.4
+  #
+  # https://github.com/projectcalico/calico/blob/v3.28.4/cni-plugin/Makefile#L169
+  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2025-4-17
+  FLANNEL_VERSION=5a977558e9fbbf93ff7ba927847fbca194e02416 \
+  # https://github.com/projectcalico/calico/blob/v3.28.4/metadata.mk#L52
+  CNI_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
+  BUILDER_IMAGE=docker.io/library/golang:1.23.10-alpine3.21
 
 FROM $BUILDER_IMAGE AS builder
 
@@ -35,7 +40,8 @@ RUN apk add --no-cache git make bash
 RUN mkdir -p /go/flannel
 WORKDIR /go/flannel
 
-RUN git clone --single-branch --branch ${FLANNEL_VERSION} https://github.com/projectcalico/flannel-cni-plugin.git /go/flannel
+RUN git clone --single-branch https://github.com/projectcalico/flannel-cni-plugin.git /go/flannel \
+  && git reset --hard $FLANNEL_VERSION 
 
 RUN make build_linux
 
@@ -46,7 +52,8 @@ RUN apk add --no-cache git make bash
 RUN mkdir -p /go/cni
 WORKDIR /go/cni
 
-RUN git clone --single-branch --branch $CNI_VERSION https://github.com/projectcalico/containernetworking-plugins.git /go/cni
+RUN git clone --single-branch https://github.com/projectcalico/containernetworking-plugins.git /go/cni \
+  && git reset --hard $CNI_VERSION
 
 RUN GOFLAGS='-buildvcs=false' CGO_ENABLED=0 ./build_linux.sh -ldflags "-X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(GIT_VERSION)"
 
