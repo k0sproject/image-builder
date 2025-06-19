@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.24.2-alpine3.21
+ARG BUILDER_IMAGE=docker.io/library/golang:1.24.4-alpine3.21
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.33.md#source-code
-ARG K8S_VERSION=1.33.1
-ARG K8S_HASH=6aa0e6ef8b9e9b7d100b69306c14f854f2c990b65264ff75e0d1acec2a41883d02609c62e8d5d36e1978f23cbd41c59121a7cfdd775a1fe55939e7001704ffcb
+ARG K8S_VERSION=1.33.2
+ARG K8S_HASH=ab55d41194cdcef73331add791ae438705436f1d280ba615293aa27727cf0cbf82c8d93b50e71ca2a2ab72d77a13232894a6e56a190c5ea7ffac3633606761a9
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
