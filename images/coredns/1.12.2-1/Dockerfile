@@ -23,7 +23,8 @@ RUN --mount=from=sources,source=/go/src/coredns,target=/go/src/coredns \
   --mount=type=cache,id=coredns-go-mod-$VERSION,target=/go/pkg/mod \
   --mount=type=tmpfs,target=/tmp \
   go build -o /coredns -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$GIT_COMMIT"
-RUN apk add --no-cache ca-certificates-bundle
+RUN apk add --no-cache ca-certificates-bundle libcap-setcap
+RUN setcap cap_net_bind_service=+ep /coredns
 
 FROM scratch
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
@@ -32,6 +33,7 @@ ARG VERSION
 
 COPY --from=build /coredns /coredns
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+USER 65532:65532
 
 EXPOSE 53 53/udp
 ENTRYPOINT ["/coredns"]
