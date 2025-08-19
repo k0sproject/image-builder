@@ -3,7 +3,7 @@ source logger.sh
 source graceful-stop.sh
 trap graceful_stop TERM
 
-tini -g -- bash <<'SCRIPT' &
+dumb-init bash <<'SCRIPT' &
 source logger.sh
 
 startup.sh
