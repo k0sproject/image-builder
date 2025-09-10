@@ -1,20 +1,20 @@
 # https://github.com/projectcalico/calico/blob/v3.29.2/cni-plugin/Dockerfile
 
 ARG \
-  VERSION=3.29.4\
-  HASH=6d2396fde36ba59ad55a92b5b66643adcc9ee13bb2b3986b1014e2f8f95fa861 \
-  # https://github.com/projectcalico/calico/blob/v3.29.4/metadata.mk#L52-L55
+  VERSION=3.30.3\
+  HASH=f24ef6afead1443b816fcfc9a6f9fdadb335a3dfab5255a2e2da2cb4fc3b5e30 \
+  # https://github.com/projectcalico/calico/blob/v3.30.3/metadata.mk#L55-L58
   # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
-  # v3.29.4 was released 2025-05-21: https://github.com/projectcalico/calico/releases/tag/v3.29.4
+  # v3.30.3 was released 2025-08-22: https://github.com/projectcalico/calico/releases/tag/v3.30.3
   #
-  # https://github.com/projectcalico/calico/blob/v3.29.4/cni-plugin/Makefile#L169
-  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2025-05-26
+  # https://github.com/projectcalico/calico/blob/v3.30.3/cni-plugin/Makefile#L169
+  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2025-08-22
   FLANNEL_VERSION=5a977558e9fbbf93ff7ba927847fbca194e02416 \
   #
-  # https://github.com/projectcalico/calico/blob/v3.29.4/cni-plugin/Makefile#L150
-  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2025-03-26
+  # https://github.com/projectcalico/calico/blob/v3.30.3/cni-plugin/Makefile#L150
+  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2025-08-22
   CNI_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
-  BUILDER_IMAGE=docker.io/library/golang:1.24.4-alpine3.21
+  BUILDER_IMAGE=docker.io/library/golang:1.24.7-alpine3.21
 
 FROM $BUILDER_IMAGE AS builder
 
@@ -29,7 +29,7 @@ RUN CGO_ENABLED=0 go build \
   -v -buildvcs=false \
   -o /out/opt/cni/bin/ \
   -ldflags "-s -w -X main.VERSION=v$VERSION" \
-  ./cni-plugin/cmd/calico ./cni-plugin/cmd/install 
+  ./cni-plugin/cmd/calico ./cni-plugin/cmd/install
 
 RUN set -e \
   && cd /out/opt/cni/bin \
@@ -43,7 +43,7 @@ RUN mkdir -p /go/flannel
 WORKDIR /go/flannel
 
 RUN git clone --single-branch https://github.com/projectcalico/flannel-cni-plugin.git /go/flannel \
-  && git reset --hard $FLANNEL_VERSION 
+  && git reset --hard $FLANNEL_VERSION
 
 RUN make build_linux
 
