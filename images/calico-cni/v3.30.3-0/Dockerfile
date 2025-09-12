@@ -26,10 +26,16 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
 
 WORKDIR /go/calico
 RUN CGO_ENABLED=0 go build \
-  -v -buildvcs=false \
+  -v -x -buildvcs=false \
   -o /out/opt/cni/bin/ \
   -ldflags "-s -w -X main.VERSION=v$VERSION" \
-  ./cni-plugin/cmd/calico ./cni-plugin/cmd/install
+  ./cni-plugin/cmd/calico
+
+RUN CGO_ENABLED=0 go build \
+  -v -x -buildvcs=false \
+  -o /out/opt/cni/bin/ \
+  -ldflags "-s -w -X main.VERSION=v$VERSION" \
+  ./cni-plugin/cmd/install
 
 RUN set -e \
   && cd /out/opt/cni/bin \
@@ -57,7 +63,7 @@ WORKDIR /go/cni
 RUN git clone --single-branch https://github.com/projectcalico/containernetworking-plugins.git /go/cni \
   && git reset --hard $CNI_VERSION
 
-RUN GOFLAGS='-buildvcs=false' CGO_ENABLED=0 ./build_linux.sh -ldflags "-X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(GIT_VERSION)"
+RUN GOFLAGS='-buildvcs=false' CGO_ENABLED=0 ./build_linux.sh -x -v -ldflags "-X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(GIT_VERSION)"
 
 
 FROM scratch

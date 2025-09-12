@@ -15,12 +15,12 @@ RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar
 WORKDIR /go/calico
 RUN mkdir -p /out/usr/bin \
   && CGO_ENABLED=0 go build \
-    -v -buildvcs=false \
+    -x -v -buildvcs=false \
     -ldflags "-s -w -X main.VERSION=v$VERSION" \
     -o /out/usr/bin/kube-controllers \
-    ./kube-controllers/cmd/kube-controllers \
-  && CGO_ENABLED=0 go build \
-    -v -buildvcs=false \
+    ./kube-controllers/cmd/kube-controllers
+RUN CGO_ENABLED=0 go build \
+    -x -v -buildvcs=false \
     -ldflags "-s -w -X main.VERSION=v$VERSION" \
     -o /out/usr/bin/check-status \
     ./kube-controllers/cmd/check-status
