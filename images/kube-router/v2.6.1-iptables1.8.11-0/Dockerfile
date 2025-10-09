@@ -1,6 +1,6 @@
-ARG KUBE_ROUTER_VERSION=v2.6.0
+ARG KUBE_ROUTER_VERSION=v2.6.1
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.1-alpine3.22 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.2-alpine3.22 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
 ENV GOTOOLCHAIN=local
 
