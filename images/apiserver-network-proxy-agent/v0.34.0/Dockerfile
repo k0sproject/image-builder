@@ -1,10 +1,10 @@
 ARG \
-  VERSION=0.33.0 \
-  HASH=8a878be9465b961638ec6f4ca8d13117518970e4beef966627b4714727fd2afe \
-  DEFAULT_BASEIMAGE=gcr.io/distroless/static-debian12:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f \
-  RISCV_BASEIMAGE=ghcr.io/go-riscv/distroless/static-unstable:latest@sha256:5e72edcb29594d42b660606e03207722f5dcb605dd74b6da92533758656d7610
+  VERSION=0.34.0 \
+  HASH=f338b1db93558121252eec01113a9adcf542d2c23d6c63a092cf9d2ae95317ac \
+  DEFAULT_BASEIMAGE=gcr.io/distroless/static-debian12:nonroot@sha256:e8a4044e0b4ae4257efa45fc026c0bc30ad320d43bd4c1a7d5271bd241e386d0 \
+  RISCV_BASEIMAGE=ghcr.io/go-riscv/distroless/static-unstable:latest@sha256:0bd27d7ab1f1863abecdebe207870375364fddc1d0ae87179ef176403d04e27b
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.5-alpine3.22 AS build
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.3-alpine3.22 AS build
 ENV CGO_ENABLED=0 GOTELEMETRY=off
 WORKDIR /go/src/kubernetes-sigs/apiserver-network-proxy
 
