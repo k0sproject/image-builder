@@ -1,0 +1,11 @@
+FROM docker.io/envoyproxy/envoy-distroless:v1.34.3@sha256:c3e7e0c70c6cfa1e34642063fc07937bb180475826c546bc7d8ce67e58f2d89f AS binary
+
+FROM gcr.io/distroless/base-debian12:nonroot@sha256:0a0dc2036b7c56d1a9b6b3eed67a974b6d5410187b88cbd6f1ef305697210ee2
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/envoyproxy/envoy"
+
+COPY --from=binary /usr/local/bin/envoy* /usr/local/bin/
+COPY --from=binary /etc/envoy/envoy.yaml /etc/envoy/envoy.yaml
+
+ENTRYPOINT ["/usr/local/bin/envoy"]
+CMD ["-c", "/etc/envoy/envoy.yaml"]
