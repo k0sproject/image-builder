@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.32.md#source-code
-ARG K8S_VERSION=1.32.9
-ARG K8S_HASH=945526179053af8a0babfb6f538438c550b493402ce92fdbbfd84862a9c68cd4b4dd3db9c5466dc717099ebbf0e3f453864056ebbbe2d41c8c67066d4b89bb6d
+ARG K8S_VERSION=1.32.10
+ARG K8S_HASH=614cd7035384779d5370eb1499250ad33db8bc43aed46f5eb53b6f6fe0524e01209cbc4df3b56ec320daa190c6c9fc11109dc78168a25519bba0b91c69ffa8e7
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
