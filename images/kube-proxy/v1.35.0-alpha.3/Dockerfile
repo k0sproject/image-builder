@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.25.3-alpine3.22
+ARG BUILDER_IMAGE=docker.io/library/golang:1.25.4-alpine3.22
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
