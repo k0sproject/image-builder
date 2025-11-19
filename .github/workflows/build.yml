@@ -60,7 +60,7 @@ jobs:
             | fromjson
             | to_entries
             | map(select(.value != $old[.key]))
-            | map(.key)
+            | map(.key | split("/") | .[1:] | join("/"))
             | if length > 0 then {folder: .} else {skip: 1} end # hack to skip an empty matrix (GitHub will fail on empty matrix builds)
             | "matrix=\(tojson)"
           ' | tee -- "$GITHUB_OUTPUT"
