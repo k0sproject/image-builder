@@ -120,7 +120,7 @@ jobs:
           } | tee -- "$GITHUB_OUTPUT"
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
           show-progress: false
