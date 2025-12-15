@@ -1,9 +1,9 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.25.2-alpine3.22
+ARG BUILDER_IMAGE=docker.io/library/golang:1.25.5-alpine3.22
 
 ARG \
-  VERSION=1.13.1 \
-  GIT_COMMIT=1db4568df6aaacda6ebbce87717156bd855f8103 \
-  HASH=13a09a07177fcf341c963b5e4ea20a52483f471e3ced90b5396ea620bfc1d835
+  VERSION=1.13.2 \
+  GIT_COMMIT=0233f3e7c600b730426628f2cf9c829d404a181f \
+  HASH=8a9f8729476bdf265d5990dea86c314db778aec2f79d3d47e43607903f7d0b37
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS sources
 ARG VERSION HASH
@@ -28,7 +28,7 @@ RUN setcap cap_net_bind_service=+ep /coredns
 
 FROM scratch
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/coredns/coredns"
+  org.opencontainers.image.source="https://github.com/coredns/coredns"
 ARG VERSION
 
 COPY --from=build /coredns /coredns
