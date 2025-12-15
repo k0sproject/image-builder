@@ -1,13 +1,13 @@
-# https://github.com/projectcalico/calico/blob/v3.29.6/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.29.7/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.29.6 \
-  HASH=927e35d130d0413399735dc401e8448c783794cb8bb9e169ccdc7b00f516a698 \
+  VERSION=3.29.7 \
+  HASH=d60fd083ad0279a4bd20109d01689e4eecb7a5e8c6d5e8be2b1718e6057f85e9 \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
-  # https://github.com/projectcalico/calico/blob/v3.29.6/metadata.mk#L36
+  # https://github.com/projectcalico/calico/blob/v3.29.7/metadata.mk#L36
   BIRD_VERSION=v0.3.3-211-g9111ec3c \
-  BUILDER_IMAGE=docker.io/library/golang:1.24.7-alpine3.21 \
+  BUILDER_IMAGE=docker.io/library/golang:1.24.11-alpine3.21 \
   IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
   IPTABLES_VERSION=1.8.11
 
