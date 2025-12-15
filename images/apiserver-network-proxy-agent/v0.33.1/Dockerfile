@@ -1,8 +1,8 @@
 ARG \
-  VERSION=0.33.0 \
-  HASH=8a878be9465b961638ec6f4ca8d13117518970e4beef966627b4714727fd2afe \
-  DEFAULT_BASEIMAGE=gcr.io/distroless/static-debian12:nonroot@sha256:627d6c5a23ad24e6bdff827f16c7b60e0289029b0c79e9f7ccd54ae3279fb45f \
-  RISCV_BASEIMAGE=ghcr.io/go-riscv/distroless/static-unstable:latest@sha256:5e72edcb29594d42b660606e03207722f5dcb605dd74b6da92533758656d7610
+  VERSION=0.33.1 \
+  HASH=3fb7e46cd63a493c3ece001c443d3b13b01b559ae553b6e9c3aa8f50acd618d2 \
+  DEFAULT_BASEIMAGE=gcr.io/distroless/static-debian12:nonroot@sha256:2b7c93f6d6648c11f0e80a48558c8f77885eb0445213b8e69a6a0d7c89fc6ae4 \
+  RISCV_BASEIMAGE=ghcr.io/go-riscv/distroless/static-unstable:latest@sha256:0bd27d7ab1f1863abecdebe207870375364fddc1d0ae87179ef176403d04e27b
 
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.24.5-alpine3.22 AS build
 ENV CGO_ENABLED=0 GOTELEMETRY=off
@@ -35,6 +35,6 @@ FROM $RISCV_BASEIMAGE   AS final-riscv64
 
 FROM final-$TARGETARCH
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/kubernetes-sigs/apiserver-network-proxy"
+  org.opencontainers.image.source="https://github.com/kubernetes-sigs/apiserver-network-proxy"
 COPY --from=build /go/src/kubernetes-sigs/apiserver-network-proxy/agent /proxy-agent
 ENTRYPOINT ["/proxy-agent"]
