@@ -1,20 +1,20 @@
 # https://github.com/projectcalico/calico/blob/v3.29.2/cni-plugin/Dockerfile
 
 ARG \
-  VERSION=3.29.7 \
-  HASH=d60fd083ad0279a4bd20109d01689e4eecb7a5e8c6d5e8be2b1718e6057f85e9 \
-  # https://github.com/projectcalico/calico/blob/v3.29.7/metadata.mk#L52-L55
+  VERSION=3.31.3 \
+  HASH=d130227adf56f5ae30ea22d8ef05974fbf4428360d4120f99f6bd3b1fa99d0d9 \
+  # https://github.com/projectcalico/calico/blob/v3.31.3/metadata.mk#L52-L55
   # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
-  # v3.29.7 was released 2025-11-20: https://github.com/projectcalico/calico/releases/tag/v3.29.7
+  # v3.31.3 was released 2025-12-19: https://github.com/projectcalico/calico/releases/tag/v3.31.3
   #
-  # https://github.com/projectcalico/calico/blob/v3.29.7/cni-plugin/Makefile#L169
-  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2025-11-20
+  # https://github.com/projectcalico/calico/blob/v3.31.3/cni-plugin/Makefile#L169
+  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2025-12-19
   FLANNEL_VERSION=5a977558e9fbbf93ff7ba927847fbca194e02416 \
   #
-  # https://github.com/projectcalico/calico/blob/v3.29.7/cni-plugin/Makefile#L150
-  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2025-11-20
+  # https://github.com/projectcalico/calico/blob/v3.31.3/cni-plugin/Makefile#L150
+  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2025-12-19
   CNI_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
-  BUILDER_IMAGE=docker.io/library/golang:1.24.11-alpine3.21
+  BUILDER_IMAGE=docker.io/library/golang:1.25.5-alpine3.23
 
 FROM $BUILDER_IMAGE AS builder
 
