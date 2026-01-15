@@ -1,30 +1,37 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.25.5-alpine3.22
+ARG BUILDER_IMAGE=docker.io/library/golang:1.25.5-alpine3.23
 
 ARG \
-  VERSION=1.13.2 \
-  GIT_COMMIT=0233f3e7c600b730426628f2cf9c829d404a181f \
-  HASH=8a9f8729476bdf265d5990dea86c314db778aec2f79d3d47e43607903f7d0b37
+  VERSION=1.14.0 \
+  GIT_COMMIT=1c964f2f68bd04a875a41479822ec3da1f1e76ef \
+  HASH=97fa2dda2fbb7f9756cfe4062a6a70edfe6471f120f980e86326ddce06995a77
 
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS sources
-ARG VERSION HASH
-RUN --mount=type=tmpfs,target=/tmp \
-  set -euo pipefail \
-  && wget -O /tmp/src.tar.gz https://github.com/coredns/coredns/archive/refs/tags/v${VERSION}.tar.gz \
-  && { echo "$HASH" /tmp/src.tar.gz | sha256sum -c -; } \
-  && tar xf /tmp/src.tar.gz -C /go/src \
-  && mv /go/src/coredns-"$VERSION" /go/src/coredns
-
-FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
+ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOTELEMETRY=off
 WORKDIR /go/src/coredns
-ARG VERSION GIT_COMMIT TARGETARCH
-ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOARCH="$TARGETARCH"
-RUN --mount=from=sources,source=/go/src/coredns,target=/go/src/coredns \
-  --mount=type=cache,id=coredns-go-cache-$TARGETARCH,target=/root/.cache/go-build \
-  --mount=type=cache,id=coredns-go-mod-$VERSION,target=/go/pkg/mod \
-  --mount=type=tmpfs,target=/tmp \
-  go build -o /coredns -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$GIT_COMMIT"
 RUN apk add --no-cache ca-certificates-bundle libcap-setcap
-RUN setcap cap_net_bind_service=+ep /coredns
+
+FROM build-base AS sources
+ARG VERSION HASH
+RUN --mount=type=cache,id=coredns-go-modcache,target=/go/pkg/mod \
+  --mount=type=tmpfs,target=/tmp \
+  set -eu \
+  && wget -qO /tmp/src.tar.gz https://github.com/coredns/coredns/archive/refs/tags/v$VERSION.tar.gz \
+  && { printf '%s */tmp/src.tar.gz' "$HASH" | sha256sum -c -; } \
+  && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && go mod download -x
+
+FROM build-base AS build
+ARG TARGETARCH
+ENV GOARCH=$TARGETARCH
+RUN --mount=from=sources,source=/go/src/coredns,target=/go/src/coredns,ro \
+  --mount=type=cache,id=coredns-go-modcache,target=/go/pkg/mod,ro \
+  --mount=type=cache,id=coredns-go-cache-$TARGETARCH,target=/root/.cache/go-build \
+  --mount=type=tmpfs,target=/tmp \
+  --network=none \
+  go build -v -mod=readonly -trimpath -buildvcs=false \
+  -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$GIT_COMMIT" \
+  -o /coredns \
+  && setcap cap_net_bind_service=+ep /coredns
 
 FROM scratch
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
