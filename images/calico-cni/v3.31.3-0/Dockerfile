@@ -19,16 +19,24 @@ ARG \
 FROM $BUILDER_IMAGE AS builder
 
 ARG VERSION HASH
-RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+RUN --mount=from=patches,target=/run/patches,ro \
+  set -e \
+  && apk add --no-cache patch \
+  && wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo "$HASH *v$VERSION.tar.gz" | sha256sum -c -; } \
   && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
-  && rm -- "v$VERSION.tar.gz"
+  && rm -- "v$VERSION.tar.gz" \
+  && cd /go/calico \
+  && for p in /run/patches/*; do \
+    echo Applying "$p" >&2; \
+    patch -p1 <"$p"; \
+  done
 
 WORKDIR /go/calico
 RUN CGO_ENABLED=0 go build \
   -v -buildvcs=false \
   -o /out/opt/cni/bin/ \
-  -ldflags "-s -w -X main.VERSION=v$VERSION" \
+  -ldflags "-s -w -X main.VERSION=v$VERSION+k0s.0" \
   ./cni-plugin/cmd/calico ./cni-plugin/cmd/install
 
 RUN set -e \

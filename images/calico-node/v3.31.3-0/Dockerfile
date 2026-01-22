@@ -14,14 +14,22 @@ ARG \
 FROM $BUILDER_IMAGE AS builder
 
 ARG VERSION HASH
-RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+RUN --mount=from=patches,target=/run/patches,ro \
+  set -e \
+  && apk add --no-cache patch \
+  && wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo "$HASH *v$VERSION.tar.gz" | sha256sum -c -; } \
   && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
-  && rm -- "v$VERSION.tar.gz"
+  && rm -- "v$VERSION.tar.gz" \
+  && cd /go/calico \
+  && for p in /run/patches/*; do \
+    echo Applying "$p" >&2; \
+    patch -p1 <"$p"; \
+  done
 
 WORKDIR /go/calico
-RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node && \
-  CGO_ENABLED=0 go build -buildvcs=false -v -o mountns -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/mountns && chmod u+s mountns
+RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION+k0s.0" ./node/cmd/calico-node && \
+  CGO_ENABLED=0 go build -buildvcs=false -v -o mountns -ldflags "-s -w -X main.VERSION=v$VERSION+k0s.0" ./node/cmd/mountns && chmod u+s mountns
 
 # For currently unknown reason, compiling in alpine 3.20 creates binary
 # which always segfaults. So we need to compile in alpine 3.19 still.
