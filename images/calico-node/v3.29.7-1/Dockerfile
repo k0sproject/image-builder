@@ -6,33 +6,39 @@ ARG \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
   # https://github.com/projectcalico/calico/blob/v3.29.7/metadata.mk#L36
-  BIRD_VERSION=v0.3.3-211-g9111ec3c \
-  BUILDER_IMAGE=docker.io/library/golang:1.24.11-alpine3.21 \
-  IPTABLES_WRAPPERS_VERSION=f6ef44b2c449cca8f005b32dea9a4b497202dbef \
+  BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
+  BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.23.3 \
+  BUILDER_IMAGE=docker.io/library/golang:1.25.6-alpine3.23 \
   IPTABLES_VERSION=1.8.11
 
-FROM $BUILDER_IMAGE AS builder
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
 
 ARG VERSION HASH
-RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
-  && { echo "$HASH *v$VERSION.tar.gz" | sha256sum -c -; } \
-  && mkdir /go/calico && tar xf "v$VERSION.tar.gz" --strip-components=1 -C /go/calico \
-  && rm -- "v$VERSION.tar.gz"
+WORKDIR /go/src/calico
+RUN --mount=type=tmpfs,target=/tmp \
+  wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+  && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.gz --strip-components=1
+RUN go mod download
 
-WORKDIR /go/calico
-RUN CGO_ENABLED=0 go build -buildvcs=false -v -o calico-node -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node && \
-  CGO_ENABLED=0 go build -buildvcs=false -v -o mountns -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/mountns && chmod u+s mountns
+ARG TARGETARCH
+RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  export GOARCH=$TARGETARCH \
+  && export CGO_ENABLED=0 \
+  && go build -mod=readonly -trimpath -buildvcs=false -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node \
+  && go build -mod=readonly -trimpath -buildvcs=false -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/mountns \
+  && chmod u+s mountns
 
-# For currently unknown reason, compiling in alpine 3.20 creates binary
-# which always segfaults. So we need to compile in alpine 3.19 still.
-FROM docker.io/library/alpine:3.21 AS ipset
+FROM $ALPINE_IMAGE AS ipset
 RUN apk add --no-cache \
   build-base pkgconf curl \
   libmnl-dev libmnl-static
 
 ARG IPSET_VERSION IPSET_HASH
 RUN curl -sSLo ipset.tar.bz2 "http://ipset.netfilter.org/ipset-$IPSET_VERSION.tar.bz2" \
-  && { echo "$IPSET_HASH *ipset.tar.bz2" | sha512sum -c -; } \
+  && { echo $IPSET_HASH ipset.tar.bz2 | sha512sum -c -; } \
   && mkdir -p /src/ipset && tar xf "ipset.tar.bz2" --strip-components=1 -C /src/ipset \
   && rm -- "ipset.tar.bz2"
 
@@ -44,11 +50,33 @@ RUN make install
 # Just a sanity check that it's not segfaulting
 RUN ipset -h
 
-# TODO We should build bird bins from source
-FROM docker.io/calico/bird:$BIRD_VERSION-$TARGETARCH$TARGETVARIANT AS bird
+
+FROM --platform=$BUILDPLATFORM $ALPINE_IMAGE AS bird-sources
+ARG BIRD_COMMIT BIRD_HASH
+WORKDIR /bird
+RUN --mount=type=tmpfs,target=/tmp \
+  wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/bird/archive/$BIRD_COMMIT.tar.gz \
+  && sha256sum -b /tmp/sources.tar.gz \
+  && { echo $BIRD_HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.gz --strip-components=1
+
+
+FROM $ALPINE_IMAGE AS bird
+RUN apk add --no-cache gcc musl-dev make autoconf flex bison linux-headers
+RUN --mount=from=bird-sources,source=/bird,target=/run/stage/bird,ro \
+  --mount=type=tmpfs,target=/bird \
+  --network=none \
+  cp -a /run/stage/bird / \
+  && cd /bird \
+  && export ARCH=$(uname -m) \
+  && DIST=dist OBJ=obj sh -x ./create_binaries.sh \
+  && find dist/ -type f -mindepth 2 -maxdepth 2 -exec strip '{}' ';' \
+  && mkdir /dist \
+  && find dist/ -type f -mindepth 2 -maxdepth 2 -exec mv '{}' /dist ';'
+
 
 # Build iptables
-FROM docker.io/library/alpine:3.21 AS iptables
+FROM $ALPINE_IMAGE AS iptables
 ARG IPTABLES_VERSION
 
 RUN apk add build-base curl pkgconf \
@@ -74,18 +102,31 @@ RUN strip /usr/local/sbin/xtables-legacy-multi
 RUN strip /usr/local/sbin/xtables-nft-multi
 RUN scanelf -Rn /usr/local && file /usr/local/sbin/*
 
-FROM $BUILDER_IMAGE AS iptables-wrapper
-ARG IPTABLES_WRAPPERS_VERSION
-RUN apk add --no-cache git make
-RUN git clone https://github.com/kubernetes-sigs/iptables-wrappers.git /iptables-wrappers
-RUN cd /iptables-wrappers \
-    && git checkout "${IPTABLES_WRAPPERS_VERSION}" \
-    && make build \
-    && test -x bin/iptables-wrapper \
-    && test -x iptables-wrapper-installer.sh
+FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS iptables-wrapper
+RUN apk add --no-cache patch make
+
+ARG IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb
+ARG IPTABLES_WRAPPER_HASH=fde9ccd22b337fd297180cd21938c0a82030187fc29aabb6800472295d62752a
+
+WORKDIR /go/src/iptables-wrapper
+RUN --mount=type=tmpfs,target=/tmp \
+  wget -qO /tmp/sources.tar.gz https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz \
+  && { echo $IPTABLES_WRAPPER_HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.gz --strip-components=1
+RUN go mod download
+
+ARG TARGETARCH
+RUN --mount=source=files,target=/run/stage/files,ro \
+  --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
+  --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  set -euo pipefail \
+  && patch </run/stage/files/iptables-wrapper.patch \
+  && GOARCH="$TARGETARCH" make build \
+  && mv bin/iptables-wrapper .
 
 # Build the image based on alpine
-FROM docker.io/library/alpine:3.20
+FROM $ALPINE_IMAGE
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/projectcalico/calico"
 ARG TARGETARCH
@@ -93,31 +134,32 @@ ARG TARGETARCH
 RUN apk add --no-cache bash iputils iproute2 conntrack-tools runit ca-certificates
 
 # Copy the calico-node binary from the builder image
-COPY --from=builder /go/calico/calico-node /usr/bin/calico-node
-COPY --from=builder /go/calico/mountns /usr/bin/mountns
+COPY --from=builder /go/src/calico/calico-node /usr/bin/calico-node
+COPY --from=builder /go/src/calico/mountns /usr/bin/mountns
 
 COPY --from=ipset /usr/local/sbin/ipset /usr/sbin/ipset
 COPY --from=ipset /src/ipset/ChangeLog /usr/share/doc/ipset/ChangeLog
 
 # Copy the config etc filesystem from builder
-COPY --from=builder /go/calico/node/filesystem/ /
-COPY --from=builder /go/calico/confd/etc/ /etc/
+COPY --from=builder /go/src/calico/node/filesystem/ /
+COPY --from=builder /go/src/calico/confd/etc/ /etc/
 
 # Change permissions to make confd templates and output available in /etc/calico
 # to all container users.
 RUN chgrp -R 0 /etc/calico && \
     chmod -R g=u /etc/calico
 
-COPY --from=bird /bird* /usr/bin/
+COPY --from=bird /dist/* /usr/bin/
 
 # Copy iptables and wrappers
-COPY --from=iptables /usr/local/sbin/xtables-* /sbin/
-COPY --from=iptables /usr/local/sbin/iptables* /sbin/
-COPY --from=iptables /usr/local/sbin/ip6tables* /sbin/
-COPY --from=iptables-wrapper /iptables-wrappers/bin/iptables-wrapper /
-COPY --from=iptables-wrapper /iptables-wrappers/iptables-wrapper-installer.sh /
-
-RUN /iptables-wrapper-installer.sh --no-sanity-check
+COPY --from=iptables \
+  /usr/local/sbin/xtables-* \
+  /usr/local/sbin/iptables* \
+  /usr/local/sbin/ip6tables* \
+  /sbin/
+RUN --mount=from=iptables-wrapper,source=/go/src/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
+  cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper / \
+  && /iptables-wrapper-installer.sh
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
