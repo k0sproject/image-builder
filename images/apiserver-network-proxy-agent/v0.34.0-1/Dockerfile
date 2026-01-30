@@ -32,6 +32,8 @@ FROM $DEFAULT_BASEIMAGE AS final-amd64
 FROM $DEFAULT_BASEIMAGE AS final-arm64
 FROM $DEFAULT_BASEIMAGE AS final-arm
 FROM $RISCV_BASEIMAGE   AS final-riscv64
+# nobody:nobody
+USER 65534:65534
 
 FROM final-$TARGETARCH
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
