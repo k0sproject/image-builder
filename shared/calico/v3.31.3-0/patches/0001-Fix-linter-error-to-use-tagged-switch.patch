@@ -1,0 +1,291 @@
+From eb63f855c0eb49e4047c433dc3bf3ca7e27d533b Mon Sep 17 00:00:00 2001
+From: Jiawei Huang <jiawei@tigera.io>
+Date: Mon, 15 Sep 2025 13:04:39 -0700
+Subject: [PATCH] Fix linter error to use tagged switch
+
+---
+ felix/bpf/attach.go                     |  9 +++++----
+ felix/bpf/polprog/pol_prog_builder.go   | 14 ++++++++------
+ felix/calc/stats_collector.go           |  5 +++--
+ felix/collector/flowlog/types.go        |  6 +++---
+ felix/config/param_types.go             |  5 +++--
+ felix/daemon/daemon.go                  |  5 +++--
+ felix/dataplane/linux/bpf_route_mgr.go  |  5 +++--
+ felix/ipsets/utils_for_test.go          |  7 ++++---
+ felix/iptables/renderer.go              |  5 +++--
+ felix/nfnetlink/conntrack.go            |  7 ++++---
+ felix/rules/rule_defs.go                |  7 ++++---
+ felix/statusrep/status_file_reporter.go |  7 ++++---
+ 12 files changed, 47 insertions(+), 35 deletions(-)
+
+diff --git a/felix/bpf/attach.go b/felix/bpf/attach.go
+index 53c488d15b9..5e1170a9a40 100644
+--- a/felix/bpf/attach.go
++++ b/felix/bpf/attach.go
+@@ -82,13 +82,14 @@ func ListCalicoAttached() (map[string]EPAttachInfo, error) {
+ 	for _, p := range aTC {
+ 		if strings.HasPrefix(p.Name, "cali") {
+ 			info := ai[p.DevName]
+-			if p.Kind == "tcx/egress" {
++			switch p.Kind {
++			case "tcx/egress":
+ 				info.Egress = p.ProgID
+-			} else if p.Kind == "tcx/ingress" {
++			case "tcx/ingress":
+ 				info.Ingress = p.ProgID
+-			} else if p.Kind == "clsact/egress" {
++			case "clsact/egress":
+ 				info.Egress = p.ID
+-			} else {
++			default:
+ 				info.Ingress = p.ID
+ 			}
+ 			ai[p.DevName] = info
+diff --git a/felix/bpf/polprog/pol_prog_builder.go b/felix/bpf/polprog/pol_prog_builder.go
+index 92f0180933d..55a0e1fbaed 100644
+--- a/felix/bpf/polprog/pol_prog_builder.go
++++ b/felix/bpf/polprog/pol_prog_builder.go
+@@ -577,22 +577,24 @@ const (
+ )
+ 
+ func (leg matchLeg) offsetToStateIPAddressField() (offset FieldOffset) {
+-	if leg == legSource {
++	switch leg {
++	case legSource:
+ 		offset = stateOffIPSrc
+-	} else if leg == legDestPreNAT {
++	case legDestPreNAT:
+ 		offset = stateOffPreNATIPDst
+-	} else {
++	default:
+ 		offset = stateOffPostNATIPDst
+ 	}
+ 	return
+ }
+ 
+ func (leg matchLeg) offsetToStatePortField() (portOffset FieldOffset) {
+-	if leg == legSource {
++	switch leg {
++	case legSource:
+ 		portOffset = stateOffSrcPort
+-	} else if leg == legDestPreNAT {
++	case legDestPreNAT:
+ 		portOffset = stateOffPreNATDstPort
+-	} else {
++	default:
+ 		portOffset = stateOffPostNATDstPort
+ 	}
+ 	return
+diff --git a/felix/calc/stats_collector.go b/felix/calc/stats_collector.go
+index 51a89afffc0..84877b3e6a2 100644
+--- a/felix/calc/stats_collector.go
++++ b/felix/calc/stats_collector.go
+@@ -133,7 +133,8 @@ func (s *StatsCollector) OnUpdate(update api.Update) (filterOut bool) {
+ 		log.WithField("key", update.Key).Warn("Failed to get hostname")
+ 		return
+ 	}
+-	if update.UpdateType == api.UpdateTypeKVNew {
++	switch update.UpdateType {
++	case api.UpdateTypeKVNew:
+ 		s.keyCountByHost[hostname] += 1
+ 		if log.IsLevelEnabled(log.DebugLevel) {
+ 			log.WithFields(log.Fields{
+@@ -145,7 +146,7 @@ func (s *StatsCollector) OnUpdate(update api.Update) (filterOut bool) {
+ 		if counter != nil {
+ 			*counter += 1
+ 		}
+-	} else if update.UpdateType == api.UpdateTypeKVDeleted {
++	case api.UpdateTypeKVDeleted:
+ 		s.keyCountByHost[hostname] -= 1
+ 		if log.IsLevelEnabled(log.DebugLevel) {
+ 			log.WithFields(log.Fields{
+diff --git a/felix/collector/flowlog/types.go b/felix/collector/flowlog/types.go
+index 3a415daa21d..80897b563ad 100644
+--- a/felix/collector/flowlog/types.go
++++ b/felix/collector/flowlog/types.go
+@@ -428,8 +428,8 @@ func NewFlowStats(mu metric.Update) FlowStats {
+ }
+ 
+ func (f *FlowStats) aggregateFlowStats(mu metric.Update, displayDebugTraceLogs bool) {
+-	switch {
+-	case mu.UpdateType == metric.UpdateTypeReport:
++	switch mu.UpdateType {
++	case metric.UpdateTypeReport:
+ 		// Add / update the flowStartedRefs if we either haven't seen this tuple before OR the tuple is already in the
+ 		// flowStartRefs (we may have an updated value).
+ 		if !f.flowsRefsActive.Contains(mu.Tuple) || f.flowsStartedRefs.Contains(mu.Tuple) {
+@@ -437,7 +437,7 @@ func (f *FlowStats) aggregateFlowStats(mu metric.Update, displayDebugTraceLogs b
+ 		}
+ 
+ 		f.flowsRefsActive.AddWithValue(mu.Tuple, mu.NatOutgoingPort)
+-	case mu.UpdateType == metric.UpdateTypeExpire:
++	case metric.UpdateTypeExpire:
+ 		f.flowsCompletedRefs.AddWithValue(mu.Tuple, mu.NatOutgoingPort)
+ 		f.flowsRefsActive.Discard(mu.Tuple)
+ 	}
+diff --git a/felix/config/param_types.go b/felix/config/param_types.go
+index 4a33a981341..e9a3e510b9c 100644
+--- a/felix/config/param_types.go
++++ b/felix/config/param_types.go
+@@ -196,9 +196,10 @@ func intSchema(ranges []MinMax) string {
+ }
+ 
+ func formatInt(m int) string {
+-	if m == math.MaxInt64 {
++	switch m {
++	case math.MaxInt64:
+ 		return "2^63-1"
+-	} else if m == math.MinInt64 {
++	case math.MinInt64:
+ 		return "-2^63"
+ 	}
+ 	return fmt.Sprint(m)
+diff --git a/felix/daemon/daemon.go b/felix/daemon/daemon.go
+index 5bb961e89eb..8d8d421dec9 100644
+--- a/felix/daemon/daemon.go
++++ b/felix/daemon/daemon.go
+@@ -1244,9 +1244,10 @@ func (fc *DataplaneConnector) reconcileWireguardStatUpdate(dpPubKey string, ipVe
+ 		}
+ 		if storedPublicKey != dpPubKey {
+ 			updateCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+-			if ipVersion == proto.IPVersion_IPV4 {
++			switch ipVersion {
++			case proto.IPVersion_IPV4:
+ 				node.Status.WireguardPublicKey = dpPubKey
+-			} else if ipVersion == proto.IPVersion_IPV6 {
++			case proto.IPVersion_IPV6:
+ 				node.Status.WireguardPublicKeyV6 = dpPubKey
+ 			}
+ 			_, err := fc.datastorev3.Nodes().Update(updateCtx, node, options.SetOptions{})
+diff --git a/felix/dataplane/linux/bpf_route_mgr.go b/felix/dataplane/linux/bpf_route_mgr.go
+index 929885cbc02..d207851bcb9 100644
+--- a/felix/dataplane/linux/bpf_route_mgr.go
++++ b/felix/dataplane/linux/bpf_route_mgr.go
+@@ -301,9 +301,10 @@ func (m *bpfRouteManager) calculateRoute(cidr ip.CIDR) routes.ValueInterface {
+ 
+ 	if m.blockedCIDRs.Contains(cidr) {
+ 		log.WithField("cidr", cidr).Debug("CIDR is blocked.")
+-		if m.svcLoopPrevention == "Drop" {
++		switch m.svcLoopPrevention {
++		case "Drop":
+ 			flags |= routes.FlagBlackHoleDrop
+-		} else if m.svcLoopPrevention == "Reject" {
++		case "Reject":
+ 			flags |= routes.FlagBlackHoleReject
+ 		}
+ 	}
+diff --git a/felix/ipsets/utils_for_test.go b/felix/ipsets/utils_for_test.go
+index 0805738c6d5..9775e9e5c1b 100644
+--- a/felix/ipsets/utils_for_test.go
++++ b/felix/ipsets/utils_for_test.go
+@@ -751,11 +751,12 @@ func (c *listCmd) main() {
+ 	writef("Name: %s\n", c.SetName)
+ 	writef("Type: %s\n", meta.Type)
+ 	writef("Revision: %d\n", meta.Revision)
+-	if meta.Type == IPSetTypeBitmapPort {
++	switch meta.Type {
++	case IPSetTypeBitmapPort:
+ 		writef("Header: family %s range %d-%d\n", meta.Family, meta.RangeMin, meta.RangeMax)
+-	} else if meta.Type == "unknown:type" {
++	case "unknown:type":
+ 		writef("Header: floop\n")
+-	} else {
++	default:
+ 		writef("Header: family %s hashsize 1024 maxelem %d\n", meta.Family, meta.MaxSize)
+ 	}
+ 	writef("Field: foobar\n") // Dummy field, should get ignored.
+diff --git a/felix/iptables/renderer.go b/felix/iptables/renderer.go
+index 074c8299177..3a2aa707208 100644
+--- a/felix/iptables/renderer.go
++++ b/felix/iptables/renderer.go
+@@ -81,10 +81,11 @@ func (i *iptablesRenderer) RuleHashes(c *generictables.Chain, features *environm
+ }
+ 
+ func (i *iptablesRenderer) commentFrag(hash string) string {
+-	if hash == "HASH" {
++	switch hash {
++	case "HASH":
+ 		// Special case for generating chain hashes, which don't include the comment fragment.
+ 		return hash
+-	} else if hash == "" {
++	case "":
+ 		// If the hash is empty, we don't generate a comment.
+ 		return ""
+ 	}
+diff --git a/felix/nfnetlink/conntrack.go b/felix/nfnetlink/conntrack.go
+index a9f908ce334..ba82662c349 100644
+--- a/felix/nfnetlink/conntrack.go
++++ b/felix/nfnetlink/conntrack.go
+@@ -94,7 +94,8 @@ func (cte *CtEntry) OriginalTuplePostDNAT() (CtTuple, error) {
+ 		return EmptyCtTuple, errors.New("Entry is not DNAT-ed")
+ 	}
+ 
+-	if cte.OriginalTuple.ProtoNum == nfnl.ICMP_PROTO {
++	switch cte.OriginalTuple.ProtoNum {
++	case nfnl.ICMP_PROTO:
+ 		return CtTuple{
+ 			cte.OriginalTuple.Src,
+ 			cte.ReplyTuple.Src,
+@@ -103,7 +104,7 @@ func (cte *CtEntry) OriginalTuplePostDNAT() (CtTuple, error) {
+ 			cte.OriginalTuple.Zone,
+ 			CtL4Src{Id: cte.ReplyTuple.L4Src.Id},
+ 			CtL4Dst{Type: cte.ReplyTuple.L4Dst.Type, Code: cte.ReplyTuple.L4Dst.Code}}, nil
+-	} else if cte.OriginalTuple.ProtoNum == nfnl.TCP_PROTO || cte.OriginalTuple.ProtoNum == nfnl.UDP_PROTO {
++	case nfnl.TCP_PROTO, nfnl.UDP_PROTO:
+ 		return CtTuple{
+ 			cte.OriginalTuple.Src,
+ 			cte.ReplyTuple.Src,
+@@ -112,7 +113,7 @@ func (cte *CtEntry) OriginalTuplePostDNAT() (CtTuple, error) {
+ 			cte.OriginalTuple.Zone,
+ 			CtL4Src{Port: cte.ReplyTuple.L4Dst.Port},
+ 			CtL4Dst{Port: cte.ReplyTuple.L4Src.Port}}, nil
+-	} else {
++	default:
+ 		return CtTuple{
+ 			cte.OriginalTuple.Src,
+ 			cte.ReplyTuple.Src,
+diff --git a/felix/rules/rule_defs.go b/felix/rules/rule_defs.go
+index 00d1dd98dbf..c9031351b73 100644
+--- a/felix/rules/rule_defs.go
++++ b/felix/rules/rule_defs.go
+@@ -373,11 +373,12 @@ func (r *DefaultRuleRenderer) IptablesFilterDenyAction() generictables.Action {
+ }
+ 
+ func (r *DefaultRuleRenderer) ipSetConfig(ipVersion uint8) *ipsets.IPVersionConfig {
+-	if ipVersion == 4 {
++	switch ipVersion {
++	case 4:
+ 		return r.IPSetConfigV4
+-	} else if ipVersion == 6 {
++	case 6:
+ 		return r.IPSetConfigV6
+-	} else {
++	default:
+ 		log.WithField("version", ipVersion).Panic("Unknown IP version")
+ 		return nil
+ 	}
+diff --git a/felix/statusrep/status_file_reporter.go b/felix/statusrep/status_file_reporter.go
+index f296735ec89..e57a6334187 100644
+--- a/felix/statusrep/status_file_reporter.go
++++ b/felix/statusrep/status_file_reporter.go
+@@ -263,16 +263,17 @@ func (fr *EndpointStatusFileReporter) handleEndpointUpdate(e interface{}) {
+ 			return
+ 		}
+ 
+-		if m.Status.Status == statusDown {
++		switch m.Status.Status {
++		case statusDown:
+ 			logrus.WithField("update", e).Debug("Skipping WorkloadEndpointStatusUpdate with down status")
+ 			fr.statusDirDeltaTracker.Desired().Delete(fn)
+ 			return
+-		} else if m.Status.Status == statusUp {
++		case statusUp:
+ 			// Explicitly checking the opposite case here (rather than fallthrough)
+ 			// in-case of a terrible failure where status is neither "up" nor "down".
+ 			logrus.WithField("update", e).Debug("Handling WorkloadEndpointUpdate with up status")
+ 			fr.statusDirDeltaTracker.Desired().Set(fn, *epStatus)
+-		} else {
++		default:
+ 			logrus.WithField("update", e).Warn("Skipping update with unrecognized status")
+ 		}
+ 

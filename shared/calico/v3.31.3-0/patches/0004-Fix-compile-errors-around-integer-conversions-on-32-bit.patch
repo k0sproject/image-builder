@@ -1,0 +1,32 @@
+From 74bfe49ab0b0319ece8c97ee8056ddc1a87915be Mon Sep 17 00:00:00 2001
+From: Tom Wieczorek <twieczorek@mirantis.com>
+Date: Mon, 15 Sep 2025 15:10:48 +0200
+Subject: [PATCH] Fix compile errors around integer conversions on 32-bit
+
+Signed-off-by: Tom Wieczorek <twieczorek@mirantis.com>
+---
+ felix/config/param_types.go | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/felix/config/param_types.go b/felix/config/param_types.go
+index e9a3e510b9c..d6556117f6e 100644
+--- a/felix/config/param_types.go
++++ b/felix/config/param_types.go
+@@ -196,7 +196,7 @@ func intSchema(ranges []MinMax) string {
+ }
+ 
+ func formatInt(m int) string {
+-	switch m {
++	switch int64(m) {
+ 	case math.MaxInt64:
+ 		return "2^63-1"
+ 	case math.MinInt64:
+@@ -901,7 +901,7 @@ func (r *RegionParam) SchemaDescription() string {
+ 
+ // linux can support route-table indices up to 0xFFFFFFFF
+ // however, using 0xFFFFFFFF tables would require too much computation, so the total number of designated tables is capped at 0xFFFF
+-const routeTableMaxLinux = 0xffffffff
++const routeTableMaxLinux uint32 = 0xffffffff
+ const routeTableRangeMaxTables = 0xffff
+ 
+ type RouteTableRangeParam struct {
