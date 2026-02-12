@@ -7,14 +7,30 @@ on:
       proxy_version:
         description: 'Version of kube-proxy to build (ex: v1.27.1)'
         required: true
+      repository:
+        description: 'Repository to push the image to (ex: quay.io/k0sproject)'
+        required: false
+        default: 'quay.io/k0sproject'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build and push images
-      run: |
-        echo "${{ secrets.DOCKER_SECRET }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
-        pushd ./hostprocess/calico
-        ./build.sh -p ${{ github.event.inputs.proxy_version }}
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Login to Quay
+        if: startsWith(github.event.inputs.proxy_version, 'quay.io/')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+          registry: quay.io
+
+      - name: Build and push images
+        run: |
+          pushd ./hostprocess/calico
+          ./build.sh -p ${{ github.event.inputs.proxy_version }} -r ${{ github.event.inputs.repository }}
