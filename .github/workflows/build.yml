@@ -91,11 +91,13 @@ jobs:
             tag="${FOLDER#*/}"
           fi
 
-          defaultPlatforms=(linux/amd64 linux/arm64 linux/arm/v7 linux/riscv64)
+          defaultPlatforms=(linux/amd64 linux/arm64 linux/arm/v7 linux/riscv64 linux/s390x)
 
           case "$FOLDER" in
-          envoy*) unsupportedPlatforms=(linux/arm/v7 linux/riscv64) ;;
-          actions-runner* | calico*) unsupportedPlatforms=(linux/riscv64) ;;
+          envoy*) unsupportedPlatforms=(linux/arm/v7 linux/riscv64 linux/s390x) ;;
+          calico*) unsupportedPlatforms=(linux/riscv64) ;;
+          actions-runner*) unsupportedPlatforms=(linux/riscv64 linux/s390x) ;;
+          calico*) unsupportedPlatforms=(linux/riscv64) ;;
           *) unsupportedPlatforms=() ;;
           esac
 
