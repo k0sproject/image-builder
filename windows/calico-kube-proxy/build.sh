@@ -1,7 +1,9 @@
 #!/bin/bash
+set -euo pipefail
+set -x
 
 # https://devhints.io/bash
-while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
+while [[ $# -gt 0 && "$1" =~ ^- && ! "$1" == "--" ]]; do case "$1" in
   -p | --proxyVersion )
     shift; proxyVersion="$1"
     ;;
@@ -9,10 +11,9 @@ while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
     shift; repository="$1"
     ;;
   -a | --all )
-    shift; all="1"
+    all="1"
     ;;
 esac; shift; done
-if [[ "$1" == '--' ]]; then shift; fi
 
 repository=${repository:-"sigwindowstools"}
 
