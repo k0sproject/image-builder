@@ -32,5 +32,5 @@ jobs:
 
       - name: Build and push images
         run: |
-          pushd ./hostprocess/calico
+          pushd ./windows/calico-kube-proxy
           ./build.sh -p ${{ github.event.inputs.proxy_version }} -r ${{ github.event.inputs.repository }}
