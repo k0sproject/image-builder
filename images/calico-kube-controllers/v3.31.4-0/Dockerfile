@@ -1,10 +1,10 @@
 # https://github.com/projectcalico/calico/blob/v3.29.1/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.29.7 \
-  HASH=d60fd083ad0279a4bd20109d01689e4eecb7a5e8c6d5e8be2b1718e6057f85e9
+  VERSION=3.31.4 \
+  HASH=5a718ead156533a1f9260f6c234d68953707aebefa7af781e8c62690b8e69acf
 
-FROM docker.io/library/golang:1.24.11-alpine3.21 AS builder
+FROM docker.io/library/golang:1.25.7-alpine3.23 AS builder
 
 ARG VERSION HASH
 RUN wget https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
@@ -25,7 +25,7 @@ RUN mkdir -p /out/usr/bin \
     -o /out/usr/bin/check-status \
     ./kube-controllers/cmd/check-status
 
-RUN mkdir /out/licenses && cp -a kube-controllers/LICENSE /out/licenses/
+RUN mkdir /out/licenses && cp -a LICENSE.md /out/licenses/
 RUN mkdir /out/status && touch /out/status/status.json && chown 999 /out/status/status.json
 
 FROM scratch
