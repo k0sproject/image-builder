@@ -48,7 +48,7 @@ jobs:
           hack/docker-buildx.sh --progress=plain --load -t quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }} ${{ steps.imagepath.outputs.value }}
       - name: Run Trivy vulnerability scanner
         if: ${{ contains(needs.prepare.outputs.changed_files, steps.imagepath.outputs.base) }}
-        uses: aquasecurity/trivy-action@0.34.0
+        uses: aquasecurity/trivy-action@0.34.1
         with:
           image-ref: 'quay.io/k0sproject/${{ matrix.image_tag }}-${{ github.sha }}'
           format: 'table'
