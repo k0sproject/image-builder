@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Build Kube-Proxy images
+
+on:
+  workflow_dispatch:
+    inputs:
+      proxy_version:
+        description: 'Version of kube-proxy to build (ex: v1.27.1)'
+        required: true
+      repository:
+        description: 'Repository to push the image to (ex: quay.io/k0sproject)'
+        required: false
+        default: 'quay.io/k0sproject'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Login to Quay
+        if: startsWith(github.event.inputs.proxy_version, 'quay.io/')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+          registry: quay.io
+
+      - name: Build and push images
+        run: |
+          pushd ./windows/calico-kube-proxy
+          ./build.sh -p ${{ github.event.inputs.proxy_version }} -r ${{ github.event.inputs.repository }}
