@@ -107,7 +107,7 @@ COPY --from=builder /go/calico/confd/etc/ /etc/
 RUN chgrp -R 0 /etc/calico && \
     chmod -R g=u /etc/calico
 
-COPY --from=bird /bird* /usr/bin/
+COPY --from=bird /bird* /bin/
 
 # Copy iptables and wrappers
 COPY --from=iptables /usr/local/sbin/xtables-* /sbin/
