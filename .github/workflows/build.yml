@@ -126,7 +126,7 @@ jobs:
           show-progress: false
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: ${{ steps.image.outputs.platforms }}
 
