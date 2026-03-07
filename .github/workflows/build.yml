@@ -132,7 +132,7 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to Quay
         if: startsWith(steps.image.outputs.image-name, 'quay.io/')
