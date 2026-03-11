@@ -1,6 +1,6 @@
-FROM docker.io/envoyproxy/envoy:distroless-v1.34.12@sha256:28a6d97a1e4783710bdc0d48f1199cc91d18d9b28b937ef931ddbba33e55314f AS binary
+FROM docker.io/envoyproxy/envoy:distroless-v1.34.13@sha256:a21f5ca65573184017bd65be169e1521a8717ce980e8ecb7338085df0d09549c AS binary
 
-FROM gcr.io/distroless/base-debian12:nonroot@sha256:748987b77724fc1a9cf1acc8afb7f2cecff8cd91f24f43423647f1896eb7262f
+FROM gcr.io/distroless/base-debian12:nonroot@sha256:8b9f2e503e55aff85b79d6b22c7a63a65170e8698ae80de680e3f5ea600977bf
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/envoyproxy/envoy"
 
