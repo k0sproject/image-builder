@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.34.md#source-code
-ARG K8S_VERSION=1.34.5
-ARG K8S_HASH=ec48476a800aa4642660b81bd76f190a102cd00e0fb769d05c40abbbfb8d0ebb53e35c559e7fe4dc43d439b5f097742909cb84641085b32879b5fbd05a44a330
+ARG K8S_VERSION=1.34.6
+ARG K8S_HASH=8b066310812ad647ff3be8d3774f6812d58c10a6f7e9c00a752e6bd21006be938b88787b5ba10b18f69cfb98955fc001712e9c146bd0387ff830dd6d6f3d1d8c
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -35,8 +35,8 @@ RUN --mount=source=files,target=/run/stage/files,ro \
 
 FROM build-base AS iptables-wrapper
 
-ARG IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb
-ARG IPTABLES_WRAPPER_HASH=fde9ccd22b337fd297180cd21938c0a82030187fc29aabb6800472295d62752a
+ARG IPTABLES_WRAPPER_VERSION=c6b9b2d4ee8701f3d476768ab8732d1b85ec7fef
+ARG IPTABLES_WRAPPER_HASH=bd35d22da90a317ec9b91a04c56831916b04d80e9b6318f5440df045d99fcba6
 
 RUN set -euo pipefail \
   && wget -qO iptables-wrapper.tar.gz "https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz" \
