@@ -3,6 +3,7 @@
 ARG \
   VERSION=3.31.4 \
   HASH=5a718ead156533a1f9260f6c234d68953707aebefa7af781e8c62690b8e69acf \
+  GIT_REVISION=6d8c39b0ef01cdf92960e08f704c7198ffe42eac \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
   # https://github.com/projectcalico/calico/blob/v3.31.4/metadata.mk#L42
@@ -17,18 +18,33 @@ FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
 ARG VERSION HASH
 WORKDIR /go/src/calico
 RUN --mount=type=tmpfs,target=/tmp \
-  wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+  set -euo pipefail \
+  && wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
-  && tar xf /tmp/sources.tar.gz --strip-components=1
+  && tar xf /tmp/sources.tar.gz --strip-components=1 \
+  && find . -type f -exec stat -c '%Y' {} \; | sort -n -u | tail -1 >/tmp/source-date-epoch \
+  && read -r SOURCE_DATE_EPOCH </tmp/source-date-epoch \
+  && touch -d "@$SOURCE_DATE_EPOCH" /tmp/source-date-epoch \
+  && mv -T /tmp/source-date-epoch .source-date-epoch
 RUN go mod download
 
-ARG TARGETARCH
+ARG TARGETARCH GIT_REVISION
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  export GOARCH=$TARGETARCH \
+  read -r SOURCE_DATE_EPOCH <.source-date-epoch \
+  && export SOURCE_DATE_EPOCH \
+  && export GOARCH=$TARGETARCH \
   && export CGO_ENABLED=0 \
-  && go build -mod=readonly -trimpath -buildvcs=false -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/calico-node \
-  && go build -mod=readonly -trimpath -buildvcs=false -ldflags "-s -w -X main.VERSION=v$VERSION" ./node/cmd/mountns \
+  && LDFLAGS='-s -w' \
+  && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
+  && `# https://github.com/projectcalico/calico/blob/v3.31.4/lib.Makefile#L224` \
+  && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
+  && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
+  && go build \
+    -mod=readonly -trimpath -buildvcs=false \
+    -ldflags "$LDFLAGS" \
+    -o . \
+    ./node/cmd/calico-node ./node/cmd/mountns \
   && chmod u+s mountns
 
 FROM $ALPINE_IMAGE AS ipset
