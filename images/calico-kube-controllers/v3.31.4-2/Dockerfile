@@ -1,10 +1,10 @@
-# https://github.com/projectcalico/calico/blob/v3.29.7/kube-controllers/Dockerfile
+# https://github.com/projectcalico/calico/blob/v3.31.4/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.29.7 \
-  HASH=d60fd083ad0279a4bd20109d01689e4eecb7a5e8c6d5e8be2b1718e6057f85e9
+  VERSION=3.31.4 \
+  HASH=5a718ead156533a1f9260f6c234d68953707aebefa7af781e8c62690b8e69acf
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.6-alpine3.23 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.8-alpine3.23 AS builder
 
 ARG VERSION HASH
 WORKDIR /go/src/calico
@@ -30,7 +30,7 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
     -o /out/usr/bin/check-status \
     ./kube-controllers/cmd/check-status
 
-RUN mkdir /out/licenses && cp -a kube-controllers/LICENSE /out/licenses/
+RUN mkdir /out/licenses && cp -a LICENSE.md /out/licenses/
 RUN mkdir /out/status && touch /out/status/status.json && chown 999 /out/status/status.json
 
 FROM scratch
