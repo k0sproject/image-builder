@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run git checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Build airgap image bundle
         run: |
@@ -20,7 +20,7 @@ jobs:
           ./create-bundle.sh
 
       - name: Upload bundle
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: k0s-custom-airgap-1.26.3.tar
           path: ./hack/custom-airgap-bundle-1.26.3/k0s-custom-airgap-1.26.3.tar
