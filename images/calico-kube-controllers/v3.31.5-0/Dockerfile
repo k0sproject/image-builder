@@ -1,11 +1,11 @@
-# https://github.com/projectcalico/calico/blob/v3.31.4/kube-controllers/Dockerfile
+# https://github.com/projectcalico/calico/blob/v3.31.5/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.31.4 \
-  HASH=5a718ead156533a1f9260f6c234d68953707aebefa7af781e8c62690b8e69acf \
-  GIT_REVISION=6d8c39b0ef01cdf92960e08f704c7198ffe42eac
+  VERSION=3.31.5 \
+  HASH=8940c0e3afdadaac6b074d313b4576c0239dd015aa2ed5ffa2353ce4bf803d35 \
+  GIT_REVISION=2e4da40144aac869e1ed2cc220b6c4b62f32efdd
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.8-alpine3.23 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.2-alpine3.23 AS builder
 
 ARG VERSION HASH
 WORKDIR /go/src/calico
@@ -30,7 +30,7 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
   && LDFLAGS='-s -w' \
   && LDFLAGS="$LDFLAGS -X main.VERSION=v$VERSION" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
-  && `# https://github.com/projectcalico/calico/blob/v3.31.4/lib.Makefile#L224` \
+  && `# https://github.com/projectcalico/calico/blob/v3.31.5/lib.Makefile#L224` \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
   && go build \

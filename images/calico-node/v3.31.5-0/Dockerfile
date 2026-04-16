@@ -1,16 +1,16 @@
-# https://github.com/projectcalico/calico/blob/v3.31.4/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.31.5/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.31.4 \
-  HASH=5a718ead156533a1f9260f6c234d68953707aebefa7af781e8c62690b8e69acf \
+  VERSION=3.31.5 \
+  HASH=8940c0e3afdadaac6b074d313b4576c0239dd015aa2ed5ffa2353ce4bf803d35 \
   GIT_REVISION=6d8c39b0ef01cdf92960e08f704c7198ffe42eac \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
-  # https://github.com/projectcalico/calico/blob/v3.31.4/metadata.mk#L42
+  # https://github.com/projectcalico/calico/blob/v3.31.5/metadata.mk#L45
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
-  ALPINE_IMAGE=docker.io/library/alpine:3.23.3 \
-  BUILDER_IMAGE=docker.io/library/golang:1.25.8-alpine3.23 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
   IPTABLES_VERSION=1.8.11
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
