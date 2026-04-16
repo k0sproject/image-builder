@@ -1,7 +1,7 @@
 FROM docker.io/library/alpine:3.21.3 AS build
-# https://github.com/kubernetes/kubernetes/blob/821bc2e15e3abadb996d477f2bfb59466cec01e0/build/pause/Makefile#L20
-ENV VERSION=3.10.1
-ENV HASH=26fe80855d14b50136986bc9806b96e72124a97e
+# https://github.com/kubernetes/kubernetes/blob/e6bea155c582846cfc43bf77ebc342b4cb83c637/build/pause/Makefile#L20
+ENV VERSION=3.10.2
+ENV HASH=e6bea155c582846cfc43bf77ebc342b4cb83c637
 
 RUN apk add --no-cache gcc musl-dev binutils
 
