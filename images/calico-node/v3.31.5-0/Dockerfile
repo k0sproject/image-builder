@@ -85,6 +85,7 @@ RUN --mount=from=bird-sources,source=/bird,target=/run/stage/bird,ro \
   cp -a /run/stage/bird / \
   && cd /bird \
   && export ARCH=$(uname -m) \
+  && export MAKEFLAGS='-j -O' \
   && DIST=dist OBJ=obj sh -x ./create_binaries.sh \
   && find dist/ -type f -mindepth 2 -maxdepth 2 -exec strip '{}' ';' \
   && mkdir /dist \
