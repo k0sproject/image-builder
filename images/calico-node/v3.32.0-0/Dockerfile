@@ -1,17 +1,18 @@
-# https://github.com/projectcalico/calico/blob/v3.31.5/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.32.0/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.31.5 \
-  HASH=8940c0e3afdadaac6b074d313b4576c0239dd015aa2ed5ffa2353ce4bf803d35 \
-  GIT_REVISION=6d8c39b0ef01cdf92960e08f704c7198ffe42eac \
+  VERSION=3.32.0 \
+  HASH=10d2170da42533a6e1fe828cba8339a361338d655316cd3e87c0bdc528f9df65 \
+  GIT_REVISION=93627116861cf9723bcb7c8fe0bdc482d7eadf49 \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
-  # https://github.com/projectcalico/calico/blob/v3.31.5/metadata.mk#L45
+  # https://github.com/projectcalico/calico/blob/v3.32.0/metadata.mk#L41
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
   ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
   BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
-  IPTABLES_VERSION=1.8.11
+  IPTABLES_VERSION=1.8.13 \
+  IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
 
@@ -37,7 +38,7 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
   && export CGO_ENABLED=0 \
   && LDFLAGS='-s -w' \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
-  && `# https://github.com/projectcalico/calico/blob/v3.31.4/lib.Makefile#L224` \
+  && `# https://github.com/projectcalico/calico/blob/v3.32.0/lib.Makefile#L229-L233` \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
   && go build \
@@ -94,15 +95,16 @@ RUN --mount=from=bird-sources,source=/bird,target=/run/stage/bird,ro \
 
 # Build iptables
 FROM $ALPINE_IMAGE AS iptables
-ARG IPTABLES_VERSION
+ARG IPTABLES_VERSION IPTABLES_HASH
 
 RUN apk add build-base curl pkgconf \
 	linux-headers \
 	libmnl-dev libmnl-static \
 	libnftnl-dev
 
-RUN curl --proto '=https' --tlsv1.2 -L https://www.netfilter.org/projects/iptables/files/iptables-$IPTABLES_VERSION.tar.xz \
-	| tar -C / -Jx
+RUN curl --proto '=https' --tlsv1.2 -L https://www.netfilter.org/projects/iptables/files/iptables-$IPTABLES_VERSION.tar.xz -o /tmp/iptables.tar.xz \
+  && { echo $IPTABLES_HASH /tmp/iptables.tar.xz | sha256sum -c -; } \
+	&& tar -C / -Jx -f /tmp/iptables.tar.xz
 
 ARG TARGET_OS
 # -D__UAPI_DEF_ETHHDR is required to build on musl.
