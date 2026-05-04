@@ -2,7 +2,7 @@
 
 ARG \
   VERSION=3.32.0 \
-  HASH=10d2170da42533a6e1fe828cba8339a361338d655316cd3e87c0bdc528f9df65 \
+  HASH=55defb4135a7f04942ff596848b4decc5eeed67d0d97f81b57df5395f41354c9 \
   GIT_REVISION=93627116861cf9723bcb7c8fe0bdc482d7eadf49
 
 FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.2-alpine3.23 AS builder
