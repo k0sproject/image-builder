@@ -2,7 +2,7 @@
 
 ARG \
   VERSION=3.32.0 \
-  HASH=10d2170da42533a6e1fe828cba8339a361338d655316cd3e87c0bdc528f9df65 \
+  HASH=55defb4135a7f04942ff596848b4decc5eeed67d0d97f81b57df5395f41354c9 \
   # https://github.com/projectcalico/calico/blob/v3.32.0/metadata.mk#L58-L61
   # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
   # v3.32.0 was released 2026-04-15: https://github.com/projectcalico/calico/releases/tag/v3.32.0
