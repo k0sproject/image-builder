@@ -1,7 +1,7 @@
 ARG \
-  KUBE_ROUTER_VERSION=v2.8.1 \
-  # https://github.com/cloudnativelabs/kube-router/blob/v2.8.1/Makefile#L38
-  GOBGP_VERSION=v4.2.0 \
+  KUBE_ROUTER_VERSION=v2.9.0 \
+  # https://github.com/cloudnativelabs/kube-router/blob/v2.9.0/Makefile#L40
+  GOBGP_VERSION=v4.4.0 \
   ALPINE_IMAGE=docker.io/library/alpine:3.23.3 \
   BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
   IPTABLES_VERSION=1.8.13 \
