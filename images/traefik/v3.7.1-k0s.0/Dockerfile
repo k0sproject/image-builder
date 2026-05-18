@@ -1,9 +1,9 @@
 ARG \
-  VERSION=3.7.0 \
-  HASH=916017d4662462232c97eb7ea9093a0a51fd8a7b8f1f85f8b0fe04ce7b0c75ad \
-  BUILDIMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e3f945647ffb95b5839c07038d64f9811adf17308b9121d8a2b87b6a22a80a39 \
-  HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:97a4f486986c5e87e8fcc335f12ee042fcb9265d668e5d9acd75e24ea7873635
+  VERSION=3.7.1 \
+  HASH=ce88132d8c668a3b1515b43d0019e18c87a3cb3dd5b4d6772992294649b295e8 \
+  BUILDIMAGE=docker.io/library/golang:1.26.3-alpine3.23 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
+  HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:85d91507422525f89358038d0534e45375b19f360ffadaeb0119f7f86a294773
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources
 ENV GOTOOLCHAIN=local GOTELEMETRY=off
