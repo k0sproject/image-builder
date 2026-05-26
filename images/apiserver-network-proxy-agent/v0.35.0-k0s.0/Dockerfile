@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG \
-  VERSION=0.34.0 \
-  HASH=f338b1db93558121252eec01113a9adcf542d2c23d6c63a092cf9d2ae95317ac \
-  BUILDIMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e3f945647ffb95b5839c07038d64f9811adf17308b9121d8a2b87b6a22a80a39 \
+  VERSION=0.35.0 \
+  HASH=8da5a94f1f18a744ad17e4b5c8e3b3d1c6667295dd1983dba369a1d4faead596 \
+  BUILDIMAGE=docker.io/library/golang:1.26.3-alpine3.23 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
   WINDOWS_VERSION=
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources
