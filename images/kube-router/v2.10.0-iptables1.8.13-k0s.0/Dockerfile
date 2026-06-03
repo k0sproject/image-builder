@@ -1,9 +1,9 @@
 ARG \
-  KUBE_ROUTER_VERSION=v2.9.0 \
-  # https://github.com/cloudnativelabs/kube-router/blob/v2.9.0/Makefile#L40
-  GOBGP_VERSION=v4.4.0 \
-  ALPINE_IMAGE=docker.io/library/alpine:3.23.3 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
+  KUBE_ROUTER_VERSION=v2.10.0 \
+  # https://github.com/cloudnativelabs/kube-router/blob/v2.10.0/Makefile#L40 (v4.5.0)
+  GOBGP_REVISION=5f191066a78e2c1e929c54b5b75fe2c683c166e4 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.4-alpine3.23 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99 \
   IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \
@@ -18,9 +18,9 @@ ENV GOTOOLCHAIN=local
 
 FROM build-base AS build-gobgp
 
-ARG GOBGP_VERSION
+ARG GOBGP_REVISION
 WORKDIR /go/src/gobgp
-RUN git -C .. -c advice.detachedHead=false clone -b $GOBGP_VERSION https://github.com/osrg/gobgp.git
+RUN git -C .. -c advice.detachedHead=false clone --revision "$GOBGP_REVISION" https://github.com/osrg/gobgp.git
 RUN go mod download
 
 ARG TARGETARCH
@@ -68,10 +68,10 @@ RUN --mount=type=tmpfs,target=/go/src/iptables-wrapper/bin \
 FROM $ALPINE_IMAGE AS build-iptables
 
 RUN apk add --no-interactive --no-cache \
-    build-base curl pkgconf \
-    linux-headers \
-    libmnl-dev libmnl-static \
-    libnftnl-dev
+  build-base curl pkgconf \
+  linux-headers \
+  libmnl-dev libmnl-static \
+  libnftnl-dev
 
 ARG IPTABLES_VERSION IPTABLES_HASH
 WORKDIR /src/iptables
@@ -96,8 +96,8 @@ RUN --network=none \
 
 FROM $ALPINE_IMAGE AS build-ipset
 RUN apk add --no-interactive --no-cache \
-    build-base pkgconf \
-    libmnl-dev libmnl-static
+  build-base pkgconf \
+  libmnl-dev libmnl-static
 
 
 ARG IPSET_VERSION IPSET_HASH
@@ -119,13 +119,13 @@ RUN ipset -h
 
 FROM $ALPINE_IMAGE
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
-      org.opencontainers.image.source="https://github.com/cloudnativelabs/kube-router"
+  org.opencontainers.image.source="https://github.com/cloudnativelabs/kube-router"
 RUN apk add --no-interactive --no-cache \
-    iproute2 \
-    ipvsadm \
-    conntrack-tools \
-    curl \
-    bash \
+  iproute2 \
+  ipvsadm \
+  conntrack-tools \
+  curl \
+  bash \
   && mkdir -p /var/lib/gobgp
 RUN --mount=from=build-iptables,source=/usr/local,target=/run/stage/iptables,ro \
   --mount=from=build-iptables-wrapper,source=/go/src/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
@@ -144,7 +144,7 @@ RUN --mount=from=build-kube-router,source=/go/src/kube-router,target=/run/stage/
   --network=none \
   cp -a /run/stage/kube-router/kube-router /usr/local/bin/ \
   && cp -a /run/stage/kube-router/build/image-assets/motd-kube-router.sh /etc/ \
-  && echo "hosts: files dns" > /etc/nsswitch.conf
+  && echo "hosts: files dns" >/etc/nsswitch.conf
 
 WORKDIR /root
 ENTRYPOINT ["/usr/local/bin/kube-router"]
