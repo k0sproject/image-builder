@@ -1,7 +1,7 @@
 ARG \
-  VERSION=3.7.1 \
-  HASH=ce88132d8c668a3b1515b43d0019e18c87a3cb3dd5b4d6772992294649b295e8 \
-  BUILDIMAGE=docker.io/library/golang:1.26.3-alpine3.23 \
+  VERSION=3.7.3 \
+  HASH=94f34e1cfdf92134cb9dbbfd9234df0ecf9b1b2636add7b01e24a980962ef2d0 \
+  BUILDIMAGE=docker.io/library/golang:1.26.4-alpine3.23 \
   DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
   HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:85d91507422525f89358038d0534e45375b19f360ffadaeb0119f7f86a294773
 
