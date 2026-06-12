@@ -9,25 +9,24 @@
  
  vet: ## Run go vet against code.
  	$(GO) vet ./...
---- iptables-wrapper-installer.sh
-+++ iptables-wrapper-installer.sh
-@@ -85,11 +85,15 @@ done
+--- main.go
++++ main.go
+@@ -107,8 +107,17 @@ func main() {
+ func install(ctx context.Context) {
+ 	wrapperPath, err := os.Executable()
+ 	if err != nil {
+-		fatal(err)
++		fmt.Fprintf(os.Stderr, "Warning: falling back to command line: %s\n", err)
++		if wrapperPath, err = filepath.Abs(os.Args[0]); err != nil {
++			fatal(err)
++		}
++		if stat, err := os.Stat(wrapperPath); err != nil {
++			fatal(err)
++		} else if !stat.Mode().IsRegular() {
++			fatal(errors.New("not a regular file: " + wrapperPath))
++		}
+ 	}
++
+ 	wrapperPath = filepath.Clean(wrapperPath)
+ 	installDir := filepath.Dir(wrapperPath)
  
- if [ -z "${no_sanity_check}" ]; then
-     # Ensure dependencies are installed
--    if ! version=$("${sbin}/iptables-nft" --version 2> /dev/null); then
--        echo "ERROR: iptables-nft is not installed" 1>&2
--        exit 1
-+    # NOTE(k0s): iptables-nft will fail under QEMU with the below error
-+    # message, hence use iptables-legacy for the version check
-+    if ! version=$("${sbin}/iptables-nft" --version 2>&1); then
-+        if [ "$version" != "iptables: Failed to initialize nft: Protocol not supported" ]; then
-+            echo "ERROR: iptables-nft is not installed" 1>&2
-+            exit 1
-+        fi
-     fi
--    if ! "${sbin}/iptables-legacy" --version > /dev/null 2>&1; then
-+    if ! version=$("${sbin}/iptables-legacy" --version 2> /dev/null); then
-         echo "ERROR: iptables-legacy is not installed" 1>&2
-         exit 1
-     fi

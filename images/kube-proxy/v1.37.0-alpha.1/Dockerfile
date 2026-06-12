@@ -1,11 +1,11 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.3-alpine3.23
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.4-alpine3.24
 
-# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.36.md#source-code
-ARG VERSION=1.36.1
-ARG HASH=5f2c24638d56895bb3575aff0e25641fd9c25c192e27c6cd5255b888efc041221975cff9df99c1c842b876d3092cb9eaec0fd5b410bd0ec9ea74f3bc437dfaff
+# https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.37.md#source-code
+ARG VERSION=1.37.0-alpha.1
+ARG HASH=e142c1afc4ff99f21bc928354d3eca1508c8ed34cc98952bf75b2ab6171da83864e15218a4669bc555964cbcbddc759ba12ac7cb989a2afa00312e03e56f9fab
 
-ARG IPTABLES_WRAPPER_VERSION=c6b9b2d4ee8701f3d476768ab8732d1b85ec7fef
-ARG IPTABLES_WRAPPER_HASH=bd35d22da90a317ec9b91a04c56831916b04d80e9b6318f5440df045d99fcba6
+ARG IPTABLES_WRAPPER_VERSION=bfef9e5087a198b50a4124bb9ce9d2c7c99025dd
+ARG IPTABLES_WRAPPER_HASH=cefaaa2325236de34f0bc55b526aa9b4f319ba90cf136001d646c7bab6d51a32
 
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
@@ -18,9 +18,9 @@ WORKDIR /go/src/kube-proxy
 ARG VERSION HASH
 RUN --mount=source=files,target=/run/stage/files,ro \
   --mount=type=tmpfs,target=/tmp \
-  set -eu \
+  set -euo pipefail \
   && wget -qO /tmp/sources.tar.gz https://dl.k8s.io/v$VERSION/kubernetes-src.tar.gz \
-  && { printf '%s */tmp/sources.tar.gz' "$HASH" | sha512sum -c -; } \
+  && { echo $HASH /tmp/sources.tar.gz | sha512sum -c -; } \
   && tar xf /tmp/sources.tar.gz \
   && patch -p0 </run/stage/files/riscv64.patch
 
@@ -43,9 +43,9 @@ WORKDIR /go/src/iptables-wrapper
 ARG IPTABLES_WRAPPER_VERSION IPTABLES_WRAPPER_HASH
 RUN --mount=source=files,target=/run/stage/files,ro \
   --mount=type=tmpfs,target=/tmp \
-  set -eu \
+  set -euo pipefail \
   && wget -qO /tmp/sources.tar.gz https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz \
-  && { echo $IPTABLES_WRAPPER_HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && { echo $IPTABLES_WRAPPER_HASH /tmp/sources.tar.gz | sha256sum -c -; } || { sha256sum /tmp/sources.tar.gz; exit 1; } \
   && tar xf /tmp/sources.tar.gz --strip-components=1 \
   && patch </run/stage/files/iptables-wrapper.patch
 
@@ -73,7 +73,6 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
   && cp -a /etc/apk/repositories /run/stage/alpine/keys /opt/stage/etc/apk \
   && apk add --no-interactive --root /opt/stage --arch "$APK_ARCH" --initdb \
     alpine-release \
-    busybox \
     tzdata \
     ca-certificates-bundle \
     conntrack-tools \
@@ -82,8 +81,8 @@ RUN --mount=source=alpine-keys/$TARGETARCH,target=/run/stage/alpine/keys,ro \
     nftables \
     iptables-legacy \
     kmod \
-  && cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper /opt/stage \
-  && chroot /opt/stage /iptables-wrapper-installer.sh \
+  && cp -a /run/stage/iptables-wrapper/iptables-wrapper /opt/stage/usr/sbin \
+  && chroot /opt/stage /usr/sbin/iptables-wrapper install \
   && sed -i -e 's,^D:/bin/sh ,D:,' -e '/D:alpine-keys/d' /opt/stage/lib/apk/db/installed \
   && bins="$(chroot /opt/stage /bin/busybox --list-full)" \
   && apk del --no-interactive --no-network --root /opt/stage --purge busybox alpine-keys \
