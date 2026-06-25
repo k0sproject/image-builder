@@ -1,12 +1,12 @@
-# https://github.com/projectcalico/calico/blob/v3.32.0/node/Dockerfile.amd64
+# https://github.com/projectcalico/calico/blob/v3.32.1/node/Dockerfile.amd64
 
 ARG \
-  VERSION=3.32.0 \
-  HASH=55defb4135a7f04942ff596848b4decc5eeed67d0d97f81b57df5395f41354c9 \
-  GIT_REVISION=93627116861cf9723bcb7c8fe0bdc482d7eadf49 \
+  VERSION=3.32.1 \
+  HASH=ee4699f5ffff98ff53de89bd5a36e8b647f671a6b4d707638990f1097f76e2cf \
+  GIT_REVISION=0ca9d1b93644778cafdf1812f3dda02ac0c361e8 \
   IPSET_VERSION=7.23 \
   IPSET_HASH=5a43c790abf157a55db5a9a22cb5f28a225f5c7969beda81566a2259aa82c9d852979eb805b11b4347f47c6a0c2cc4de6f14e4733bee5b562844422a45fb9dab \
-  # https://github.com/projectcalico/calico/blob/v3.32.0/metadata.mk#L41
+  # https://github.com/projectcalico/calico/blob/v3.32.1/metadata.mk#L41
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
   ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
@@ -38,7 +38,7 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
   && export CGO_ENABLED=0 \
   && LDFLAGS='-s -w' \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
-  && `# https://github.com/projectcalico/calico/blob/v3.32.0/lib.Makefile#L229-L233` \
+  && `# https://github.com/projectcalico/calico/blob/v3.32.1/lib.Makefile#L229-L233` \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
   && go build \
