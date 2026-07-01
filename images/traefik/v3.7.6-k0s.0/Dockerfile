@@ -1,7 +1,7 @@
 ARG \
-  VERSION=3.7.5 \
-  HASH=b843f693b138625e1aa0b172ab6ff9e51b0baf0379c1326fa64e254a0fed4677 \
-  BUILDIMAGE=docker.io/library/golang:1.26.4-alpine3.24@sha256:cbd920d5d022f93cd3a80182331134419376edceeac3ce653daa84bb613286f9 \
+  VERSION=3.7.6 \
+  HASH=2f87a5d4d2e7b732aa831b8666cdb786008df7544c385881d016189756aa148a \
+  BUILDIMAGE=docker.io/library/golang:1.26.4-alpine3.24@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648 \
   DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
   HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:85d91507422525f89358038d0534e45375b19f360ffadaeb0119f7f86a294773
 
@@ -25,14 +25,14 @@ FROM builder AS binary
 ARG TARGETOS TARGETARCH SOURCE_DATE_EPOCH
 RUN --mount=type=cache,id=calico-gocache-$TARGETOS-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  `# https://github.com/traefik/traefik/blob/v3.6.13/Makefile#L59` \
+  `# https://github.com/traefik/traefik/blob/v3.7.6/Makefile#L59` \
   && make --touch generate-webui \
   && make binary \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
     `# https://github.com/traefik/traefik/pull/13009` \
     'FLAGS[*]=-mod=readonly -trimpath -buildvcs=false' \
-    `# https://github.com/traefik/traefik/blob/v3.6.13/Makefile#L11` \
+    `# https://github.com/traefik/traefik/blob/v3.7.6/Makefile#L11` \
     DATE=$(date -u -d @$SOURCE_DATE_EPOCH '+%Y-%m-%d_%I:%M:%S%p') \
   && mkdir /out \
   && mv -v dist/$TARGETOS/$TARGETARCH/traefik /out/
