@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 k0s authors
 
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.4-alpine3.24@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648
 
 ARG \
-  VERSION=1.14.3 \
-  GIT_COMMIT=17fceec6d93fd1dde5ba6888c363f131ff6d647f \
-  HASH=137a5da5f49c8eb81e2cc3929d462606146faaa651bd609031d867eb6c73748f
+  VERSION=1.14.6 \
+  GIT_COMMIT=424d125775cd70fa90dfc80bf0e52cc9a9aeb574 \
+  HASH=44af24bd9ab0b9f85a9feaa3132de72e9e4a0629452d41b3e2f49aa2028233af
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 ENV GOTOOLCHAIN=local GOTELEMETRY=off
