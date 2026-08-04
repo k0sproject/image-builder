@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.26.2-alpine3.23 AS builder
+FROM docker.io/library/golang:1.26.5-alpine3.23 AS builder
 
 RUN apk add git make curl
 
