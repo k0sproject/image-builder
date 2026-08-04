@@ -10,9 +10,20 @@ ARG \
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
   ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.2-alpine3.23 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.23 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99
+
+# Dependency overrides for advisories still open in calico v3.32.1:
+# GO-2026-5970 (x/text), GO-2026-6061 (grpc), GO-2026-5158 (otel) and
+# GO-2026-5841 (klauspost/compress). Raising them requires `go mod tidy`, which
+# also nudges a handful of unrelated transitive dependencies, so drop each
+# override again once upstream picks the version up.
+ARG \
+  XTEXT_VERSION=v0.39.0 \
+  GRPC_VERSION=v1.82.1 \
+  OTEL_VERSION=v1.44.0 \
+  COMPRESS_VERSION=v1.18.7
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
 
@@ -27,7 +38,25 @@ RUN --mount=type=tmpfs,target=/tmp \
   && read -r SOURCE_DATE_EPOCH </tmp/source-date-epoch \
   && touch -d "@$SOURCE_DATE_EPOCH" /tmp/source-date-epoch \
   && mv -T /tmp/source-date-epoch .source-date-epoch
-RUN go mod download
+
+ARG XTEXT_VERSION GRPC_VERSION OTEL_VERSION COMPRESS_VERSION
+RUN set -eu \
+  && go mod edit \
+    -require=golang.org/x/text@$XTEXT_VERSION \
+    -require=google.golang.org/grpc@$GRPC_VERSION \
+    -require=go.opentelemetry.io/otel@$OTEL_VERSION \
+    -require=github.com/klauspost/compress@$COMPRESS_VERSION \
+  && go mod tidy \
+  && for want in \
+    "golang.org/x/text $XTEXT_VERSION" \
+    "google.golang.org/grpc $GRPC_VERSION" \
+    "go.opentelemetry.io/otel $OTEL_VERSION" \
+    "github.com/klauspost/compress $COMPRESS_VERSION"; \
+  do \
+    got=$(go list -m "${want% *}"); \
+    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
+  done \
+  && go mod download
 
 ARG TARGETARCH GIT_REVISION
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \

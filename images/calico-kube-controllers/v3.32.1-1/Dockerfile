@@ -5,7 +5,18 @@ ARG \
   HASH=ee4699f5ffff98ff53de89bd5a36e8b647f671a6b4d707638990f1097f76e2cf \
   GIT_REVISION=0ca9d1b93644778cafdf1812f3dda02ac0c361e8
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.2-alpine3.23 AS builder
+# Dependency overrides for advisories still open in calico v3.32.1:
+# GO-2026-5970 (x/text), GO-2026-6061 (grpc), GO-2026-5158 (otel) and
+# GO-2026-5841 (klauspost/compress). Raising them requires `go mod tidy`, which
+# also nudges a handful of unrelated transitive dependencies, so drop each
+# override again once upstream picks the version up.
+ARG \
+  XTEXT_VERSION=v0.39.0 \
+  GRPC_VERSION=v1.82.1 \
+  OTEL_VERSION=v1.44.0 \
+  COMPRESS_VERSION=v1.18.7
+
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.5-alpine3.23 AS builder
 
 ARG VERSION HASH
 WORKDIR /go/src/calico
@@ -18,7 +29,25 @@ RUN --mount=type=tmpfs,target=/tmp \
   && read -r SOURCE_DATE_EPOCH </tmp/source-date-epoch \
   && touch -d "@$SOURCE_DATE_EPOCH" /tmp/source-date-epoch \
   && mv -T /tmp/source-date-epoch .source-date-epoch
-RUN go mod download
+
+ARG XTEXT_VERSION GRPC_VERSION OTEL_VERSION COMPRESS_VERSION
+RUN set -eu \
+  && go mod edit \
+    -require=golang.org/x/text@$XTEXT_VERSION \
+    -require=google.golang.org/grpc@$GRPC_VERSION \
+    -require=go.opentelemetry.io/otel@$OTEL_VERSION \
+    -require=github.com/klauspost/compress@$COMPRESS_VERSION \
+  && go mod tidy \
+  && for want in \
+    "golang.org/x/text $XTEXT_VERSION" \
+    "google.golang.org/grpc $GRPC_VERSION" \
+    "go.opentelemetry.io/otel $OTEL_VERSION" \
+    "github.com/klauspost/compress $COMPRESS_VERSION"; \
+  do \
+    got=$(go list -m "${want% *}"); \
+    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
+  done \
+  && go mod download
 
 ARG TARGETARCH GIT_REVISION
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
