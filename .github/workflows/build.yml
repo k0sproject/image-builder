@@ -95,6 +95,8 @@ jobs:
 
           case "$FOLDER" in
           envoy*) unsupportedPlatforms=(linux/arm/v7 linux/riscv64) ;;
+          # Upstream etcd releases binaries for amd64, arm64, ppc64le and s390x only.
+          etcd*) unsupportedPlatforms=(linux/arm/v7 linux/riscv64) ;;
           actions-runner*) unsupportedPlatforms=(linux/riscv64) ;;
           traefik*) defaultPlatforms+=(windows/amd64) ;;
           *) unsupportedPlatforms=() ;;
