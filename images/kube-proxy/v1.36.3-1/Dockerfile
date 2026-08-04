@@ -7,6 +7,12 @@ ARG HASH=c3ea6328aaa970cc6ce9b097a42e7d8e999eff1cbdf2e62759f07332f66115d6a2c5eb2
 ARG IPTABLES_WRAPPER_VERSION=c6b9b2d4ee8701f3d476768ab8732d1b85ec7fef
 ARG IPTABLES_WRAPPER_HASH=bd35d22da90a317ec9b91a04c56831916b04d80e9b6318f5440df045d99fcba6
 
+# Kubernetes 1.36 still ships golang.org/x/crypto v0.47.0, which is flagged by
+# CVE-2026-46595, CVE-2026-39830 through CVE-2026-39834 and CVE-2026-42508.
+# The bump only landed upstream in the 1.37 line, so pull it in here and
+# re-vendor before building.
+ARG XCRYPTO_VERSION=v0.54.0
+
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 ENV GOTOOLCHAIN=local CGO_ENABLED=0 GOTELEMETRY=off
@@ -15,14 +21,20 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 
 FROM build-base AS kube-proxy
 WORKDIR /go/src/kube-proxy
-ARG VERSION HASH
+ARG VERSION HASH XCRYPTO_VERSION
 RUN --mount=source=files,target=/run/stage/files,ro \
   --mount=type=tmpfs,target=/tmp \
   set -eu \
   && wget -qO /tmp/sources.tar.gz https://dl.k8s.io/v$VERSION/kubernetes-src.tar.gz \
   && { printf '%s */tmp/sources.tar.gz' "$HASH" | sha512sum -c -; } \
   && tar xf /tmp/sources.tar.gz \
-  && patch -p0 </run/stage/files/riscv64.patch
+  && patch -p0 </run/stage/files/riscv64.patch \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q golang.org/x/crypto "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=golang.org/x/crypto@$XCRYPTO_VERSION ); \
+  done \
+  && go work vendor \
+  && grep -q "^# golang.org/x/crypto $XCRYPTO_VERSION\$" vendor/modules.txt
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-proxy-go-cache-$TARGETARCH,target=/run/build/go-cache \
