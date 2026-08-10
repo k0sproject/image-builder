@@ -9,7 +9,7 @@ ARG \
   # https://github.com/projectcalico/calico/blob/v3.32.1/metadata.mk#L42-43
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
-  ALPINE_IMAGE=docker.io/library/alpine:3.23.4 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.23.5 \
   BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.23 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99
