@@ -1,0 +1,120 @@
+# https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Dockerfile
+
+ARG \
+  VERSION=3.32.1 \
+  HASH=ee4699f5ffff98ff53de89bd5a36e8b647f671a6b4d707638990f1097f76e2cf \
+  # https://github.com/projectcalico/calico/blob/v3.32.1/metadata.mk#L59-L62
+  # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
+  # v3.32.1 was released 2026-06-24: https://github.com/projectcalico/calico/releases/tag/v3.32.1
+  #
+  # https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Makefile#L175
+  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2026-06-24
+  FLANNEL_VERSION=5a977558e9fbbf93ff7ba927847fbca194e02416 \
+  #
+  # https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Makefile#L155
+  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2026-06-24
+  CNI_PLUGINS_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
+  CNI_PLUGINS_HASH=97162c06333ba91c1d4ab8085ed4be09a81a45216c594eb3011332c953a501ba
+
+# Dependency overrides for advisories still open in calico v3.32.1:
+# GO-2026-5970 (x/text), GO-2026-6061 (grpc), GO-2026-5158 (otel) and
+# GO-2026-5841 (klauspost/compress). Raising them requires `go mod tidy`, which
+# also nudges a handful of unrelated transitive dependencies, so drop each
+# override again once upstream picks the version up. Only the calico module is
+# patched; the flannel-cni-plugin and containernetworking-plugins stages build
+# separate modules that carry none of these advisories.
+ARG \
+  XTEXT_VERSION=v0.39.0 \
+  GRPC_VERSION=v1.82.1 \
+  OTEL_VERSION=v1.44.0 \
+  COMPRESS_VERSION=v1.18.7
+
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.5-alpine3.23 AS build-base
+
+
+FROM build-base AS builder
+ARG VERSION HASH
+WORKDIR /go/src/calico
+RUN --mount=type=tmpfs,target=/tmp \
+  wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
+  && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.gz --strip-components=1
+
+ARG XTEXT_VERSION GRPC_VERSION OTEL_VERSION COMPRESS_VERSION
+RUN set -eu \
+  && go mod edit \
+    -require=golang.org/x/text@$XTEXT_VERSION \
+    -require=google.golang.org/grpc@$GRPC_VERSION \
+    -require=go.opentelemetry.io/otel@$OTEL_VERSION \
+    -require=github.com/klauspost/compress@$COMPRESS_VERSION \
+  && go mod tidy \
+  && for want in \
+    "golang.org/x/text $XTEXT_VERSION" \
+    "google.golang.org/grpc $GRPC_VERSION" \
+    "go.opentelemetry.io/otel $OTEL_VERSION" \
+    "github.com/klauspost/compress $COMPRESS_VERSION"; \
+  do \
+    got=$(go list -m "${want% *}"); \
+    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
+  done \
+  && go mod download
+
+ARG TARGETARCH
+RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  export GOARCH=$TARGETARCH \
+  && export CGO_ENABLED=0 \
+  && go build \
+    -mod=readonly -trimpath -buildvcs=false \
+    -o /out/ \
+    -ldflags "-s -w -X main.VERSION=v$VERSION" \
+    ./cni-plugin/cmd/calico ./cni-plugin/cmd/install
+
+RUN set -e \
+  && cd /out \
+  && ln -s calico calico-ipam
+
+
+FROM build-base AS flannel-cni-plugin
+RUN apk add --no-cache git bash
+
+ARG FLANNEL_VERSION
+WORKDIR /go/src/flannel-cni-plugin
+RUN git -C .. -c advice.detachedHead=false clone --revision $FLANNEL_VERSION https://github.com/projectcalico/flannel-cni-plugin.git
+RUN go mod download
+
+ARG TARGETARCH
+RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  GOARCH=$TARGETARCH TAG=$FLANNEL_VERSION EXTRA_LDFLAGS=-s scripts/build_flannel.sh
+
+
+FROM build-base AS cni-plugins
+RUN apk add --no-cache make bash
+
+ARG CNI_PLUGINS_VERSION CNI_PLUGINS_HASH
+WORKDIR /go/src/cni-plugins
+RUN --mount=type=tmpfs,target=/tmp \
+  wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/containernetworking-plugins/archive/$CNI_PLUGINS_VERSION.tar.gz \
+  && { echo $CNI_PLUGINS_HASH /tmp/sources.tar.gz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.gz --strip-components=1
+
+ARG TARGETARCH
+RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
+  --network=none \
+  export GOARCH=$TARGETARCH \
+  && export CGO_ENABLED=0 \
+  && export GOFLAGS='-trimpath -buildvcs=false' \
+  && ./build_linux.sh \
+    -ldflags "-s -w -X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$CNI_PLUGINS_VERSION"
+
+
+FROM scratch
+LABEL org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.source="https://github.com/projectcalico/calico"
+COPY --from=builder /out/* /opt/cni/bin/
+COPY --from=flannel-cni-plugin /go/src/flannel-cni-plugin/dist/flannel-* /opt/cni/bin/flannel
+COPY --from=cni-plugins /go/src/cni-plugins/bin/* /opt/cni/bin/
+ENV PATH=/opt/cni/bin
+WORKDIR /opt/cni/bin
+CMD ["/opt/cni/bin/install"]
