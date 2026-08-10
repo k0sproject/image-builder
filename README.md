@@ -1,4 +1,6 @@
 # Image Builder
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fk0sproject%2Fimage-builder.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fk0sproject%2Fimage-builder?ref=badge_shield)
+
 
 This repo contains the Dockerfiles and GitHub actions for building the images used in [k0s](https://github.com/k0sproject/k0s).
 
@@ -21,3 +23,6 @@ the script will do it for calico-cni, calico-kube-controllers and calico-node:
 ```shell
 ./bump-images.sh calico v3.28.2-0 v3.28.4-0 v3.29.3-1 v3.29.4-0
 ````
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fk0sproject%2Fimage-builder.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fk0sproject%2Fimage-builder?ref=badge_large)
