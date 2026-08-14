@@ -1,12 +1,23 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: 2026 k0s authors
 
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.4-alpine3.24@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df
 
 ARG \
   VERSION=1.14.6 \
   GIT_COMMIT=424d125775cd70fa90dfc80bf0e52cc9a9aeb574 \
   HASH=44af24bd9ab0b9f85a9feaa3132de72e9e4a0629452d41b3e2f49aa2028233af
+
+# Dependency overrides for advisories still open in coredns v1.14.6:
+# CVE-2026-56864/CVE-2026-56865 (x/mod) and GHSA-hrxh-6v49-42gf (grpc).
+# Raising them requires `go mod tidy`, which also nudges a handful of
+# unrelated transitive dependencies, so drop each override again once
+# upstream picks the version up. x/mod's own requirements pull x/text
+# up transitively, which also clears CVE-2026-56852 (x/text) without
+# needing a direct override.
+ARG \
+  XMOD_VERSION=v0.40.0 \
+  GRPC_VERSION=v1.82.1
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 ENV GOTOOLCHAIN=local GOTELEMETRY=off
@@ -20,7 +31,21 @@ RUN --mount=type=tmpfs,target=/tmp \
   && wget -qO /tmp/sources.tar.gz https://github.com/coredns/coredns/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } || { sha256sum /tmp/sources.tar.gz; exit 1; } \
   && tar xf /tmp/sources.tar.gz --strip-components=1
-RUN go mod download
+
+ARG XMOD_VERSION GRPC_VERSION
+RUN set -eu \
+  && go mod edit \
+    -require=golang.org/x/mod@$XMOD_VERSION \
+    -require=google.golang.org/grpc@$GRPC_VERSION \
+  && go mod tidy \
+  && for want in \
+    "golang.org/x/mod $XMOD_VERSION" \
+    "google.golang.org/grpc $GRPC_VERSION"; \
+  do \
+    got=$(go list -m "${want% *}"); \
+    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
+  done \
+  && go mod download
 
 
 FROM build-base AS build
