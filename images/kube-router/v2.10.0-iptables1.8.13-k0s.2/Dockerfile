@@ -3,13 +3,23 @@ ARG \
   # https://github.com/cloudnativelabs/kube-router/blob/v2.10.0/Makefile#L40 (v4.5.0)
   GOBGP_REVISION=5f191066a78e2c1e929c54b5b75fe2c683c166e4 \
   ALPINE_IMAGE=docker.io/library/alpine:3.24.1 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.24 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99 \
   IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \
   IPTABLES_WRAPPER_HASH=fde9ccd22b337fd297180cd21938c0a82030187fc29aabb6800472295d62752a \
   IPSET_VERSION=7.24 \
   IPSET_HASH=fbe3424dff222c1cb5e5c34d38b64524b2217ce80226c14fdcbb13b29ea36112
+
+# Dependency overrides for advisories still open upstream:
+# GHSA-hrxh-6v49-42gf (grpc, both gobgp and kube-router) and
+# CVE-2026-49837/CVE-2026-49838 (github.com/osrg/gobgp/v4, the library
+# kube-router imports - distinct from the standalone gobgp binary built
+# from GOBGP_REVISION above). Drop each override again once upstream
+# picks the version up.
+ARG \
+  GRPC_VERSION=v1.82.1 \
+  GOBGP_LIB_VERSION=v4.7.0
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 RUN apk add --no-interactive --no-cache git make
@@ -21,7 +31,9 @@ FROM build-base AS build-gobgp
 ARG GOBGP_REVISION
 WORKDIR /go/src/gobgp
 RUN git -C .. -c advice.detachedHead=false clone --revision "$GOBGP_REVISION" https://github.com/osrg/gobgp.git
+ARG GRPC_VERSION
 RUN go mod edit -replace golang.org/x/net=golang.org/x/net@v0.57.0 \
+  -require=google.golang.org/grpc@$GRPC_VERSION \
   && go mod tidy \
   && go mod download
 
@@ -36,7 +48,10 @@ FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
 WORKDIR /go/src/kube-router
 RUN git -C .. -c advice.detachedHead=false clone --branch $KUBE_ROUTER_VERSION https://github.com/cloudnativelabs/kube-router.git
+ARG GRPC_VERSION GOBGP_LIB_VERSION
 RUN go mod edit -replace golang.org/x/net=golang.org/x/net@v0.57.0 \
+  -require=google.golang.org/grpc@$GRPC_VERSION \
+  -require=github.com/osrg/gobgp/v4@$GOBGP_LIB_VERSION \
   && go mod tidy \
   && go mod download
 
