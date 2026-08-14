@@ -4,7 +4,7 @@
 ARG \
   VERSION=0.36.0 \
   HASH=28e7766158efd496cef5d75155b38a8883a59aff8282bef65a5a7e5e6e6f8481 \
-  BUILDIMAGE=docker.io/library/golang:1.26.4-alpine3.23 \
+  BUILDIMAGE=docker.io/library/golang:1.26.6-alpine3.23 \
   DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
   WINDOWS_VERSION=
 
@@ -19,6 +19,12 @@ RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
   && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/src.tar.gz | sha256sum -c -; } || { sha256sum /tmp/src.tar.gz; exit 1; } \
   && tar xf /tmp/src.tar.gz --strip-components=1
+RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
+  go get \
+  golang.org/x/net@v0.56.0 \
+  golang.org/x/text@v0.39.0 \
+  google.golang.org/grpc@v1.82.1 \
+  && go mod tidy
 RUN go mod download
 
 
