@@ -1,9 +1,15 @@
 ARG \
-  VERSION=v3.7.8 \
-  REVISION=4a87f05acfa2beb0211cee6e2ad4d002289752b5 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.24@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 \
+  VERSION=v3.7.10 \
+  REVISION=2a2349356c01b1b1f7ecddb0c17b30c97f5241e7 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df \
   DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:f7f8f729987ad0fdf6b05eeeae94b26e6a0f613bdf46feea7fc40f7bd72953e6 \
   HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:85d91507422525f89358038d0534e45375b19f360ffadaeb0119f7f86a294773
+
+# Dependency override for CVE-2026-56864/CVE-2026-56865 (x/mod), still
+# open in traefik v3.7.10. Raising it requires `go mod tidy`, which
+# also nudges a handful of unrelated transitive dependencies, so drop
+# the override again once upstream picks the version up.
+ARG XMOD_VERSION=v0.40.0
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 ENV GOTOOLCHAIN=local GOTELEMETRY=off
@@ -14,7 +20,14 @@ FROM build-base AS sources
 ARG REVISION
 RUN apk add --no-cache git
 RUN git -C .. -c advice.detachedHead=false clone --revision $REVISION --depth 1 https://github.com/traefik/traefik.git
-RUN go mod download
+
+ARG XMOD_VERSION
+RUN set -eu \
+  && go mod edit -require=golang.org/x/mod@$XMOD_VERSION \
+  && go mod tidy \
+  && got=$(go list -m golang.org/x/mod) \
+  && [ "$got" = "golang.org/x/mod $XMOD_VERSION" ] || { echo "dependency override lost: got '$got', want 'golang.org/x/mod $XMOD_VERSION'"; exit 1; } \
+  && go mod download
 
 
 FROM sources AS binary
