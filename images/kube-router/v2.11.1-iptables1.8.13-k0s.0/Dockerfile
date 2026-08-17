@@ -1,9 +1,9 @@
 ARG \
-  KUBE_ROUTER_VERSION=v2.10.0 \
-  # https://github.com/cloudnativelabs/kube-router/blob/v2.10.0/Makefile#L40 (v4.5.0)
-  GOBGP_REVISION=5f191066a78e2c1e929c54b5b75fe2c683c166e4 \
+  KUBE_ROUTER_VERSION=v2.11.1 \
+  # https://github.com/cloudnativelabs/kube-router/blob/v2.11.1/Makefile#L40 (v4.8.0)
+  GOBGP_REVISION=10495227d00666041c98244088b73fa80a59f86c \
   ALPINE_IMAGE=docker.io/library/alpine:3.24.1 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.24 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99 \
   IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \
@@ -36,9 +36,7 @@ FROM build-base AS build-kube-router
 ARG KUBE_ROUTER_VERSION
 WORKDIR /go/src/kube-router
 RUN git -C .. -c advice.detachedHead=false clone --branch $KUBE_ROUTER_VERSION https://github.com/cloudnativelabs/kube-router.git
-RUN go mod edit -replace golang.org/x/net=golang.org/x/net@v0.57.0 \
-  && go mod tidy \
-  && go mod download
+RUN go mod download
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-router-gocache-$TARGETARCH,target=/root/.cache/go-build \
