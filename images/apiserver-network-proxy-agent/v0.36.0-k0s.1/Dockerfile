@@ -19,11 +19,27 @@ RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
   && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/src.tar.gz | sha256sum -c -; } || { sha256sum /tmp/src.tar.gz; exit 1; } \
   && tar xf /tmp/src.tar.gz --strip-components=1
+ARG XNET_VERSION=v0.56.0 XTEXT_VERSION=v0.39.0 GRPC_VERSION=v1.82.1
 RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
-  go get \
-  golang.org/x/net@v0.56.0 \
-  golang.org/x/text@v0.39.0 \
-  google.golang.org/grpc@v1.82.1 \
+  set -eu \
+  && for spec in \
+    "golang.org/x/net $XNET_VERSION" \
+    "golang.org/x/text $XTEXT_VERSION" \
+    "google.golang.org/grpc $GRPC_VERSION" \
+  ; do \
+    pkg=$(echo "$spec" | cut -d' ' -f1); \
+    want=$(echo "$spec" | cut -d' ' -f2); \
+    have=$(go list -m -f '{{.Version}}' "$pkg"); \
+    newer=$(printf '%s\n%s\n' "${have#v}" "${want#v}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n1); \
+    if [ "$newer" = "${have#v}" ] && [ "$have" != "$want" ]; then \
+      echo "ERROR: $pkg is already $have (>= $want) -- remove this pin from the Dockerfile" >&2; \
+      exit 1; \
+    fi; \
+  done \
+  && go get \
+  golang.org/x/net@$XNET_VERSION \
+  golang.org/x/text@$XTEXT_VERSION \
+  google.golang.org/grpc@$GRPC_VERSION \
   && go mod tidy
 RUN go mod download
 
