@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.25.12-alpine3.23@sha256:cc985ef6f9c3bf9ece7488129c9abe0a150388ccdfa428d886fc709dca0b230a
+ARG BUILDER_IMAGE=docker.io/library/golang:1.25.14-alpine3.23@sha256:27b3069b25647beacd3745b0b2c83e2f9b8d3935455a32cd4531236ee1c960e0
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,8 +7,16 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.34.md#source-code
-ARG K8S_VERSION=1.34.10
-ARG K8S_HASH=24f6bbb2bf4c05d8f4bcd047f6f188e27954aa27e2b0413439b98b4f4551ad5a3e463d411bca30ef787cb2f4b335d491eb8486fb7240f30ff9e2e0b99eb5bfb1
+ARG K8S_VERSION=1.34.11
+ARG K8S_HASH=78bbb6a540948001aa1439afbcbaf3d3cc7953ec13e91411b477791ca9a429adf327f001532bb5b5c991e7496b7bd099148b090a67f335a6961df0b8ed6d5010
+
+# Kubernetes 1.34 still ships old dependencies which are flagged for CVEs.
+# The bumps only landed upstream in the 1.37 line, so pull it in here and
+# re-vendor before building.
+ARG XCRYPTO_VERSION=v0.54.0
+ARG CEL_GO_VERSION=v0.29.0
+ARG OTEL_SDK_VERSION=v1.43.0
+ARG GRPC_VERSION=v1.82.1
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
@@ -21,10 +29,31 @@ ARG TARGETARCH
 RUN --mount=source=files,target=/run/stage/files,ro \
   --mount=type=tmpfs,target=/go/kubernetes/_output \
   --mount=type=cache,id=kube-proxy-go-cache-$TARGETARCH,target=/run/stage/kube-proxy-go-cache \
-  --network=none \
   set -euo pipefail \
   && { [ "$TARGETARCH" != riscv64 ] || patch -d /go/kubernetes -p0 </run/stage/files/riscv64.patch; } \
   && du -sh /run/stage/kube-proxy-go-cache \
+  && cd /go/kubernetes \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q golang.org/x/crypto "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=golang.org/x/crypto@$XCRYPTO_VERSION ); \
+  done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q github.com/google/cel-go "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=github.com/google/cel-go@$CEL_GO_VERSION ); \
+  done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q go.opentelemetry.io/otel/sdk "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=go.opentelemetry.io/otel/sdk@$OTEL_SDK_VERSION ); \
+  done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q google.golang.org/grpc "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=google.golang.org/grpc@$GRPC_VERSION ); \
+  done \
+  && go work vendor \
+  && grep -q "^# golang.org/x/crypto $XCRYPTO_VERSION\$" vendor/modules.txt \
+  && grep -q "^# github.com/google/cel-go $CEL_GO_VERSION\$" vendor/modules.txt \
+  && grep -q "^# go.opentelemetry.io/otel/sdk $OTEL_SDK_VERSION\$" vendor/modules.txt \
+  && grep -q "^# google.golang.org/grpc $GRPC_VERSION\$" vendor/modules.txt \
   && GOCACHE=/run/stage/kube-proxy-go-cache KUBE_BUILD_PLATFORMS="linux/$TARGETARCH" make -C /go/kubernetes \
     WHAT='-trimpath -buildvcs=false cmd/kube-proxy' \
     FORCE_HOST_GO=y \

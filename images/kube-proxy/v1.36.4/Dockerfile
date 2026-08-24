@@ -1,17 +1,19 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.5-alpine3.23@sha256:622e56dbc11a8cfe87cafa2331e9a201877271cbff918af53d3be315f3da88cc
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.7-alpine3.23@sha256:b17af760035fc2f338eed92d448a6c67f2d45438844fc6c60678fa5f99e44b57
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.36.md#source-code
-ARG VERSION=1.36.3
-ARG HASH=c3ea6328aaa970cc6ce9b097a42e7d8e999eff1cbdf2e62759f07332f66115d6a2c5eb2e5973b3891c9ee36ea75fe0be6450b84f6c430ab31b62e0eb53092f9d
+ARG VERSION=1.36.4
+ARG HASH=90eaf6cc534a5ea29400d53fa5b6008eb8a116263e6f078f62ce945a883a5416c2f2e8775f880bd4d58d61ee9ced5b11282fa89329eda34a29abe0e0c2d08f63
 
 ARG IPTABLES_WRAPPER_VERSION=c6b9b2d4ee8701f3d476768ab8732d1b85ec7fef
 ARG IPTABLES_WRAPPER_HASH=bd35d22da90a317ec9b91a04c56831916b04d80e9b6318f5440df045d99fcba6
 
-# Kubernetes 1.36 still ships golang.org/x/crypto v0.47.0, which is flagged by
-# CVE-2026-46595, CVE-2026-39830 through CVE-2026-39834 and CVE-2026-42508.
-# The bump only landed upstream in the 1.37 line, so pull it in here and
+# Kubernetes 1.36 still ships old dependencies which are flagged for CVEs.
+# The bumps only landed upstream in the 1.37 line, so pull it in here and
 # re-vendor before building.
 ARG XCRYPTO_VERSION=v0.54.0
+ARG CEL_GO_VERSION=v0.29.0
+ARG OTEL_SDK_VERSION=v1.43.0
+ARG GRPC_VERSION=v1.82.1
 
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
@@ -21,7 +23,7 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 
 FROM build-base AS kube-proxy
 WORKDIR /go/src/kube-proxy
-ARG VERSION HASH XCRYPTO_VERSION
+ARG VERSION HASH XCRYPTO_VERSION CEL_GO_VERSION OTEL_SDK_VERSION GRPC_VERSION
 RUN --mount=source=files,target=/run/stage/files,ro \
   --mount=type=tmpfs,target=/tmp \
   set -eu \
@@ -33,8 +35,23 @@ RUN --mount=source=files,target=/run/stage/files,ro \
     grep -q golang.org/x/crypto "$f" || continue; \
     ( cd "$(dirname "$f")" && go mod edit -require=golang.org/x/crypto@$XCRYPTO_VERSION ); \
   done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q github.com/google/cel-go "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=github.com/google/cel-go@$CEL_GO_VERSION ); \
+  done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q go.opentelemetry.io/otel/sdk "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=go.opentelemetry.io/otel/sdk@$OTEL_SDK_VERSION ); \
+  done \
+  && for f in go.mod staging/src/k8s.io/*/go.mod; do \
+    grep -q google.golang.org/grpc "$f" || continue; \
+    ( cd "$(dirname "$f")" && go mod edit -require=google.golang.org/grpc@$GRPC_VERSION ); \
+  done \
   && go work vendor \
-  && grep -q "^# golang.org/x/crypto $XCRYPTO_VERSION\$" vendor/modules.txt
+  && grep -q "^# golang.org/x/crypto $XCRYPTO_VERSION\$" vendor/modules.txt \
+  && grep -q "^# github.com/google/cel-go $CEL_GO_VERSION\$" vendor/modules.txt \
+  && grep -q "^# go.opentelemetry.io/otel/sdk $OTEL_SDK_VERSION\$" vendor/modules.txt \
+  && grep -q "^# google.golang.org/grpc $GRPC_VERSION\$" vendor/modules.txt
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-proxy-go-cache-$TARGETARCH,target=/run/build/go-cache \
