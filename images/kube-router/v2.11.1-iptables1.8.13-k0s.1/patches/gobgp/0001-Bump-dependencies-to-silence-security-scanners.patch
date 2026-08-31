@@ -1,0 +1,67 @@
+From 5e9d9c366e2c52dc0951f404d42d7264b89e321b Mon Sep 17 00:00:00 2001
+From: Tom Wieczorek <twieczorek@mirantis.com>
+Date: Mon, 31 Aug 2026 15:58:06 +0200
+Subject: [PATCH] Bump dependencies to silence security scanners
+
+* golang.org/x/net 0.56.0 for CVE-2026-46600
+* golang.org/x/text 0.39.0 for CVE-2026-56852
+
+Signed-off-by: Tom Wieczorek <twieczorek@mirantis.com>
+---
+ go.mod |  6 +++---
+ go.sum | 12 ++++++------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/go.mod b/go.mod
+index a4ff9c88..062979a3 100644
+--- a/go.mod
++++ b/go.mod
+@@ -27,8 +27,8 @@ require (
+ 	github.com/stretchr/testify v1.10.0
+ 	github.com/vishvananda/netlink v1.3.1
+ 	go.uber.org/goleak v1.3.0
+-	golang.org/x/sys v0.45.0
+-	golang.org/x/text v0.37.0
++	golang.org/x/sys v0.46.0
++	golang.org/x/text v0.39.0
+ 	golang.org/x/time v0.12.0
+ 	google.golang.org/grpc v1.82.1
+ 	google.golang.org/protobuf v1.36.11
+@@ -57,7 +57,7 @@ require (
+ 	github.com/vishvananda/netns v0.0.5 // indirect
+ 	go.uber.org/atomic v1.9.0 // indirect
+ 	go.uber.org/multierr v1.9.0 // indirect
+-	golang.org/x/net v0.55.0 // indirect
++	golang.org/x/net v0.56.0 // indirect
+ 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+ 	gopkg.in/yaml.v3 v3.0.1 // indirect
+ )
+diff --git a/go.sum b/go.sum
+index 14dee490..83bfde82 100644
+--- a/go.sum
++++ b/go.sum
+@@ -124,15 +124,15 @@ go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
+ go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
+ go.uber.org/multierr v1.9.0 h1:7fIwc/ZtS0q++VgcfqFDxSBZVv/Xo49/SYnDFupUwlI=
+ go.uber.org/multierr v1.9.0/go.mod h1:X2jQV1h+kxSjClGpnseKVIxpmcjrj7MNnI0bnlfKTVQ=
+-golang.org/x/net v0.55.0 h1:bcvxaJn3e1U6InsFWt1JUq1aSjnRxLzT2rtD2KfkDF8=
+-golang.org/x/net v0.55.0/go.mod h1:L5U2KuzuOe1lY7Z+aWVIKK6qEeJXnXV9yzGA+WCHJww=
++golang.org/x/net v0.56.0 h1:Rw8j/hFzGvJUZwNBXnAtf5sVDVt+65SK2C7IxCxZt5o=
++golang.org/x/net v0.56.0/go.mod h1:D3Ku6r+V6JROoZK144D2XfMHFcMq/0zSfLelVTCFKec=
+ golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+ golang.org/x/sys v0.2.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+ golang.org/x/sys v0.10.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+-golang.org/x/sys v0.45.0 h1:dO4czNzziLiiXplLQgBCEpCvXQ3dnkn0SdaZSYdQ+FY=
+-golang.org/x/sys v0.45.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
+-golang.org/x/text v0.37.0 h1:Cqjiwd9eSg8e0QAkyCaQTNHFIIzWtidPahFWR83rTrc=
+-golang.org/x/text v0.37.0/go.mod h1:a5sjxXGs9hsn/AJVwuElvCAo9v8QYLzvavO5z2PiM38=
++golang.org/x/sys v0.46.0 h1:noSf2Fq6F8DBgS+LysIkx7rIExoNHJsxOAtPp4rthXw=
++golang.org/x/sys v0.46.0/go.mod h1:4GL1E5IUh+htKOUEOaiffhrAeqysfVGipDYzABqnCmw=
++golang.org/x/text v0.39.0 h1:UbZz4pLOvn600D6Oh6GGEI6VAmndrEBLv8/6BEXzyus=
++golang.org/x/text v0.39.0/go.mod h1:3UwRclnC2g0TU9x8PZiyfOajCd1zaUNHF9cvqcQZ+ZM=
+ golang.org/x/time v0.12.0 h1:ScB/8o8olJvc+CQPWrK3fPZNfh7qgwCrY0zJmoEQLSE=
+ golang.org/x/time v0.12.0/go.mod h1:CDIdPxbZBQxdj6cxyCIdrNogrJKMJ7pr37NYpMcMDSg=
+ gonum.org/v1/gonum v0.17.0 h1:VbpOemQlsSMrYmn7T2OUvQ4dqxQXU+ouZFQsZOx50z4=
+-- 
+2.54.0
+
