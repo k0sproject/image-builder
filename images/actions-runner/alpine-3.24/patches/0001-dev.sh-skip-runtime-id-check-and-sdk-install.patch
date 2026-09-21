@@ -1,0 +1,28 @@
+dev.sh: skip the runtime identifier check and the SDK download
+
+The Linux check only knows glibc runtime identifiers; we build
+linux-musl-*. The SDK build image already provides the pinned SDK, so no
+download wanted.
+
+diff --git a/src/dev.sh b/src/dev.sh
+index 88a64285..cd71b1f2 100755
+--- a/src/dev.sh
++++ b/src/dev.sh
+@@ -79,7 +79,7 @@ if [[ "$CURRENT_PLATFORM" == 'windows' ]]; then
+         echo "Failed: Can't build $RUNTIME_ID package $CURRENT_PLATFORM" >&2
+         exit 1
+     fi
+-elif [[ "$CURRENT_PLATFORM" == 'linux' ]]; then
++elif false && [[ "$CURRENT_PLATFORM" == 'linux' ]]; then
+     if [[ ("$RUNTIME_ID" != 'linux-x64') && ("$RUNTIME_ID" != 'linux-x86') && ("$RUNTIME_ID" != 'linux-arm64') && ("$RUNTIME_ID" != 'linux-arm') ]]; then
+        echo "Failed: Can't build $RUNTIME_ID package $CURRENT_PLATFORM" >&2
+        exit 1
+@@ -200,7 +200,7 @@ function package ()
+ }
+ 
+ # Install .NET SDK
+-if [[ (! -d "${DOTNETSDK_INSTALLDIR}") || (! -e "${DOTNETSDK_INSTALLDIR}/.${DOTNETSDK_VERSION}") || (! -e "${DOTNETSDK_INSTALLDIR}/dotnet") ]]; then
++if false && [[ (! -d "${DOTNETSDK_INSTALLDIR}") || (! -e "${DOTNETSDK_INSTALLDIR}/.${DOTNETSDK_VERSION}") || (! -e "${DOTNETSDK_INSTALLDIR}/dotnet") ]]; then
+ 
+     # Download dotnet SDK to ../_dotnetsdk directory
+     heading "Ensure Dotnet SDK"

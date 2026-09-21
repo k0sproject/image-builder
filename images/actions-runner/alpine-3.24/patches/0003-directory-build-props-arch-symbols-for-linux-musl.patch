@@ -1,0 +1,30 @@
+Set the architecture symbols for linux-musl too
+
+The X64/ARM/ARM64 compile-time symbols pick
+Constants.Runner.PlatformArchitecture, which is where the architecture
+label the runner registers with comes from.
+
+Set them for musl, too, so linux-musl-* build reports its architecture
+properly.
+
+diff --git a/src/Directory.Build.props b/src/Directory.Build.props
+index 9c069b12..8d4a8526 100644
+--- a/src/Directory.Build.props
++++ b/src/Directory.Build.props
+@@ -35,13 +35,13 @@
+     <DefineConstants>$(DefineConstants);ARM64</DefineConstants>
+   </PropertyGroup>
+ 
+-  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND ('$(PackageRuntime)' == 'linux-x64' OR '$(PackageRuntime)' == '')">
++  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND ('$(PackageRuntime)' == 'linux-x64' OR '$(PackageRuntime)' == 'linux-musl-x64' OR '$(PackageRuntime)' == '')">
+     <DefineConstants>$(DefineConstants);X64</DefineConstants>
+   </PropertyGroup>
+-  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND '$(PackageRuntime)' == 'linux-arm'">
++  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND ('$(PackageRuntime)' == 'linux-arm' OR '$(PackageRuntime)' == 'linux-musl-arm')">
+     <DefineConstants>$(DefineConstants);ARM</DefineConstants>
+   </PropertyGroup>
+-  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND '$(PackageRuntime)' == 'linux-arm64'">
++  <PropertyGroup Condition="'$(BUILD_OS)' == 'Linux' AND ('$(PackageRuntime)' == 'linux-arm64' OR '$(PackageRuntime)' == 'linux-musl-arm64')">
+     <DefineConstants>$(DefineConstants);ARM64</DefineConstants>
+   </PropertyGroup>
+ 

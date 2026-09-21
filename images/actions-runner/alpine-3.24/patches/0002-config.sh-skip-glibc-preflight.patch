@@ -1,0 +1,21 @@
+config.sh: skip the glibc-specific dependency preflight
+
+config.sh greps the output of `ldconfig -v` for libicu, but Alpine's
+ldconfig from musl-utils is a stub that lists nothing, so the ICU check
+fails there no matter what's installed.
+
+diff --git a/src/Misc/layoutroot/config.sh b/src/Misc/layoutroot/config.sh
+index 14cc6bab..98f39665 100755
+--- a/src/Misc/layoutroot/config.sh
++++ b/src/Misc/layoutroot/config.sh
+@@ -52,8 +52,8 @@ then
+     fi
+ 
+     libpath=${LD_LIBRARY_PATH:-}
+-    $LDCONFIG_COMMAND -NXv ${libpath//:/ } 2>&1 | grep libicu >/dev/null 2>&1
+-    if [ $? -ne 0 ]; then
++    # $LDCONFIG_COMMAND -NXv ${libpath//:/ } 2>&1 | grep libicu >/dev/null 2>&1
++    if false && [ $? -ne 0 ]; then
+         echo "Libicu's dependencies is missing for Dotnet Core 6.0"
+         echo $message
+         exit 1

@@ -3,7 +3,10 @@ source logger.sh
 source graceful-stop.sh
 trap graceful_stop TERM
 
-tini -g -- bash <<'SCRIPT' &
+# tini isn't PID 1 here, so register as a child subreaper (-s)
+# and forward signals to the child's whole process group
+# rather than just the child itself (-g).
+tini -s -g -- bash <<'SCRIPT' &
 source logger.sh
 
 startup.sh
