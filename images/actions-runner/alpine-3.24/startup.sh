@@ -83,10 +83,7 @@ if [ "${RUNNER_FEATURE_FLAG_ONCE:-}" != "true" ] && [ "${RUNNER_EPHEMERAL}" == "
   config_args+=(--ephemeral)
   log.debug 'Passing --ephemeral to config.sh to enable the ephemeral runner.'
 fi
-if [ "${DISABLE_RUNNER_UPDATE:-}" == "true" ]; then
-  config_args+=(--disableupdate)
-  log.debug 'Passing --disableupdate to config.sh to disable automatic runner updates.'
-fi
+
 if [ "${DISABLE_RUNNER_DEFAULT_LABELS:-}" == "true" ]; then
   config_args+=(--no-default-labels)
   log.debug 'Passing --no-default-labels to config.sh to disable default labels.'
@@ -104,6 +101,7 @@ while [[ ${retries_left} -gt 0 ]]; do
     --token "${RUNNER_TOKEN}" \
     --runnergroup "${RUNNER_GROUPS}" \
     --labels "${RUNNER_LABELS}" \
+    --disableupdate \
     --work "${RUNNER_WORKDIR}" "${config_args[@]}"
 
   if [ -f .runner ]; then

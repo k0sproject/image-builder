@@ -8,7 +8,6 @@ ARG RUNNER_CONTAINER_HOOKS_VERSION=0.2.0
 ARG CHANNEL=stable
 ARG DOCKER_VERSION=20.10.21
 ARG DOCKER_COMPOSE_VERSION=v2.16.0
-ARG DUMB_INIT_VERSION=0.19.0
 ARG RUNNER_USER_UID=1001
 ARG DOCKER_GROUP_GID=121
 
@@ -16,33 +15,49 @@ ARG DOCKER_GROUP_GID=121
 # release tarball only ships a glibc-linked native host, so instead of that host we
 # run the runner's managed DLLs directly through this musl-native `dotnet` (see the
 # apphost-wrapping step below), avoiding any glibc-compat shims or binary patching.
-RUN apk add --no-cache \
+RUN apk add --no-cache --no-interactive \
+    # Actions runner requirements
     bash \
-    build-base \
     ca-certificates \
-    curl \
     dotnet8-runtime \
+    nodejs \
+    tini \
+    # Common tools expected in Actions jobs
+    build-base \
+    bzip2 \
+    coreutils \
+    curl \
+    diffutils \
     git \
     git-lfs \
+    gnupg \
+    gzip \
+    grep \
     jq \
+    lsb-release \
+    mawk \
+    musl-locales \
     musl-utils \
+    ncurses \
     openssh-client \
     openssl \
     procps \
+    python3 \
+    sed \
     shadow \
     sudo \
     tar \
-    tini \
     unzip \
+    util-linux-misc \
+    xz \
     yaml-dev \
-    zip \
-    nodejs \
-    && addgroup -g "${DOCKER_GROUP_GID}" docker \
-    && adduser -D -u "${RUNNER_USER_UID}" runner \
-    && adduser runner docker \
-    && adduser runner wheel \
-    && echo "%wheel   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers
+    zip
 
+RUN adduser --disabled-password --gecos "" --uid $RUNNER_USER_UID runner \
+    && groupadd docker --gid $DOCKER_GROUP_GID \
+    && usermod -aG wheel runner \
+    && usermod -aG docker runner \
+    && echo "%wheel   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers 
 ENV HOME=/home/runner
 
 ENV RUNNER_ASSETS_DIR=/runnertmp
@@ -60,6 +75,9 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
            rm -f "$apphost" \
            && printf '#!/bin/sh\nexec dotnet "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)/%s.dll" "$@"\n' "$(basename "$apphost")" > "$apphost" \
            && chmod +x "$apphost"; \
+         else \
+           echo "Warning: $apphost or $apphost.dll not found" \
+           && exit 1; \
          fi; \
          # The release build is self-contained (glibc); rewrite its runtimeconfig.json
          # to framework-dependent so dotnet resolves Alpine's musl-native dotnet8-runtime
@@ -84,6 +102,8 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
     # are glibc binaries too, and node24 isn't even shipped for linux-arm at all.
     # Alpine's own nodejs package is musl-native; point every "using: nodeNN" version
     # actions may request at it instead.
+    # NOTE: If we ever start to use container type job steps, the bind mounting of node will break.
+    # We've agreed to tackle this if we ever start to use such steps in k0s builds
     && for nodever in node20 node24; do \
          mkdir -p "externalstmp/$nodever/bin" \
          && ln -sf /usr/bin/node "externalstmp/$nodever/bin/node"; \
@@ -137,5 +157,3 @@ USER runner
 
 ENTRYPOINT ["/bin/bash", "-c"]
 CMD ["entrypoint.sh"]
-
-
