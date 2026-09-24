@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.7-alpine3.23@sha256:b17af760035fc2f338eed92d448a6c67f2d45438844fc6c60678fa5f99e44b57
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.8-alpine3.24@sha256:8ac98ca534ac3f51e1f420a1dd2c15e74c75cfa0f23f3ad27eb5d7236c349a0c
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,16 +7,16 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md#source-code
-ARG K8S_VERSION=1.35.8
-ARG K8S_HASH=923b517de61528d5f635cf6ce1d4a46f94349d4afda40836be30eb3d492679f893a356050d362483fad9671033ad7472fc9446827ab28bde719977b4ba22dd09
+ARG K8S_VERSION=1.35.9
+ARG K8S_HASH=2d1efa87ff831aaea71df430f8a1c81631d1f3d027e30ea308f712775c3035396daf7d357f7299329d6f3d2f8514b58a1d73dbda92520b2987415c66baa6e38f
 
 # Kubernetes 1.35 still ships old dependencies which are flagged for CVEs.
 # The bumps only landed upstream in the 1.37 line, so pull it in here and
 # re-vendor before building.
-ARG XCRYPTO_VERSION=v0.54.0
+ARG XCRYPTO_VERSION=v0.55.0
 ARG CEL_GO_VERSION=v0.29.0
 ARG OTEL_SDK_VERSION=v1.43.0
-ARG GRPC_VERSION=v1.82.1
+ARG GRPC_VERSION=v1.83.2
 
 RUN set -euo pipefail \
   && wget -q "https://dl.k8s.io/v${K8S_VERSION}/kubernetes-src.tar.gz" \
