@@ -1,0 +1,32 @@
+--- Makefile
++++ Makefile
+@@ -7,7 +7,7 @@ $(BIN_DIR):
+ 	mkdir -p $(BIN_DIR)
+ 
+ build: $(BIN_DIR)
+-	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -extldflags="-static" -buildid=""' -trimpath -o $(BIN_DIR)/iptables-wrapper github.com/kubernetes-sigs/iptables-wrappers
++	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -extldflags="-static" -buildid=""' -trimpath -buildvcs=false -o $(BIN_DIR)/iptables-wrapper github.com/kubernetes-sigs/iptables-wrappers
+ 
+ vet: ## Run go vet against code.
+ 	$(GO) vet ./...
+--- main.go
++++ main.go
+@@ -107,8 +107,17 @@ func main() {
+ func install(ctx context.Context) {
+ 	wrapperPath, err := os.Executable()
+ 	if err != nil {
+-		fatal(err)
++		fmt.Fprintf(os.Stderr, "Warning: falling back to command line: %s\n", err)
++		if wrapperPath, err = filepath.Abs(os.Args[0]); err != nil {
++			fatal(err)
++		}
++		if stat, err := os.Stat(wrapperPath); err != nil {
++			fatal(err)
++		} else if !stat.Mode().IsRegular() {
++			fatal(errors.New("not a regular file: " + wrapperPath))
++		}
+ 	}
++
+ 	wrapperPath = filepath.Clean(wrapperPath)
+ 	installDir := filepath.Dir(wrapperPath)
+ 
