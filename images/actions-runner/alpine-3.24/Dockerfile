@@ -56,6 +56,7 @@ RUN apk add --no-interactive --no-cache \
         findutils \
         git \
         git-lfs \
+        github-cli \
         gnupg \
         gzip \
         grep \
