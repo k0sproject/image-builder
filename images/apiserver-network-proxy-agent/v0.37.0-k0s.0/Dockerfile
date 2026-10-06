@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG \
-  VERSION=0.36.0 \
-  HASH=28e7766158efd496cef5d75155b38a8883a59aff8282bef65a5a7e5e6e6f8481 \
-  BUILDIMAGE=docker.io/library/golang:1.26.6-alpine3.23 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:963fa6c544fe5ce420f1f54fb88b6fb01479f054c8056d0f74cc2c6000df5240 \
+  VERSION=0.37.0 \
+  HASH=d2e201f93ef1efbef60c041bd9152fa7d78394a4cb278c941bb89ecca9e67e7e \
+  BUILDIMAGE=docker.io/library/golang:1.27.1-alpine3.24 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3 \
   WINDOWS_VERSION=
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources
@@ -19,28 +19,6 @@ RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
   && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/src.tar.gz | sha256sum -c -; } || { sha256sum /tmp/src.tar.gz; exit 1; } \
   && tar xf /tmp/src.tar.gz --strip-components=1
-ARG XNET_VERSION=v0.56.0 XTEXT_VERSION=v0.39.0 GRPC_VERSION=v1.82.1
-RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
-  set -eu \
-  && for spec in \
-    "golang.org/x/net $XNET_VERSION" \
-    "golang.org/x/text $XTEXT_VERSION" \
-    "google.golang.org/grpc $GRPC_VERSION" \
-  ; do \
-    pkg=$(echo "$spec" | cut -d' ' -f1); \
-    want=$(echo "$spec" | cut -d' ' -f2); \
-    have=$(go list -m -f '{{.Version}}' "$pkg"); \
-    newer=$(printf '%s\n%s\n' "${have#v}" "${want#v}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n1); \
-    if [ "$newer" = "${have#v}" ] && [ "$have" != "$want" ]; then \
-      echo "ERROR: $pkg is already $have (>= $want) -- remove this pin from the Dockerfile" >&2; \
-      exit 1; \
-    fi; \
-  done \
-  && go get \
-  golang.org/x/net@$XNET_VERSION \
-  golang.org/x/text@$XTEXT_VERSION \
-  google.golang.org/grpc@$GRPC_VERSION \
-  && go mod tidy
 RUN go mod download
 
 
