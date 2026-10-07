@@ -1,8 +1,8 @@
 ARG \
-  VERSION=v3.7.13 \
-  REVISION=fc92cc118a0557a029c7019d5ee06665127b0f13 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.8-alpine3.24@sha256:ce864e7223ac17b1775e6fd0b4c0db580c2eb50e7953a427916379e4b92a1628 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:1c2c046bc09ed40fad370b599a0b1ae7987f55b01e247cf27a7c27cd97e5bbc7 \
+  VERSION=v3.7.14 \
+  REVISION=3bd7aa32e1b6c41166575529a10fb2346d9eaa2e \
+  BUILDER_IMAGE=docker.io/library/golang:1.27.1-alpine3.24@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3 \
   HPC_BASEIMAGE=mcr.microsoft.com/oss/v2/kubernetes/windows-host-process-containers-base-image:2.0.0@sha256:85d91507422525f89358038d0534e45375b19f360ffadaeb0119f7f86a294773
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
@@ -22,13 +22,13 @@ RUN apk add --no-cache make
 ARG TARGETOS TARGETARCH SOURCE_DATE_EPOCH VERSION
 RUN --mount=type=cache,id=traefik-gocache-$TARGETOS-$TARGETARCH,target=/root/.cache/go-build \
   --network=none \
-  `# https://github.com/traefik/traefik/blob/v3.7.13/Makefile#L59` \
+  `# https://github.com/traefik/traefik/blob/v3.7.14/Makefile#L59` \
   && make --touch generate-webui \
   && make binary \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
     FLAGS='-mod=readonly -trimpath -buildvcs=false' \
-    `# https://github.com/traefik/traefik/blob/v3.7.13/Makefile#L11` \
+    `# https://github.com/traefik/traefik/blob/v3.7.14/Makefile#L11` \
     DATE=$(date -u -d @$SOURCE_DATE_EPOCH '+%Y-%m-%d_%I:%M:%S%p') \
   && mkdir /out \
   && mv -v dist/$TARGETOS/$TARGETARCH/traefik /out/
