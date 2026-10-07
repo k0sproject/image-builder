@@ -1,28 +1,17 @@
-# https://github.com/projectcalico/calico/blob/v3.32.1/kube-controllers/Dockerfile
+# https://github.com/projectcalico/calico/blob/v3.32.2/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.32.1 \
-  HASH=ee4699f5ffff98ff53de89bd5a36e8b647f671a6b4d707638990f1097f76e2cf \
-  GIT_REVISION=0ca9d1b93644778cafdf1812f3dda02ac0c361e8
+  VERSION=3.32.2 \
+  HASH=4f5e90d613347a0024e6f2fea201ae2c576a0c9bba5296df1a10ce93de1f939e \
+  GIT_REVISION=db255c554b929afd73552fd3ac81d691107a1607
 
-# Dependency overrides for advisories still open in calico v3.32.1:
-# GO-2026-5970 (x/text), GO-2026-6061 (grpc), GO-2026-5158 (otel),
-# GO-2026-5841 (klauspost/compress) and GHSA-gcjh-h69q-9w9g (cel-go).
-# Raising them requires `go mod tidy`, which also nudges a handful of
-# unrelated transitive dependencies, so drop each override again once
-# upstream picks the version up.
-ARG \
-  XTEXT_VERSION=v0.39.0 \
-  GRPC_VERSION=v1.82.1 \
-  OTEL_VERSION=v1.44.0 \
-  COMPRESS_VERSION=v1.18.7 \
-  CELGO_VERSION=v0.29.0
-
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.6-alpine3.23 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.1-alpine3.24 AS builder
+RUN apk add --no-cache git
 
 ARG VERSION HASH
 WORKDIR /go/src/calico
-RUN --mount=type=tmpfs,target=/tmp \
+RUN --mount=from=patches,target=/run/patches,ro \
+  --mount=type=tmpfs,target=/tmp \
   set -euo pipefail \
   && wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
@@ -30,28 +19,9 @@ RUN --mount=type=tmpfs,target=/tmp \
   && find . -type f -exec stat -c '%Y' {} \; | sort -n -u | tail -1 >/tmp/source-date-epoch \
   && read -r SOURCE_DATE_EPOCH </tmp/source-date-epoch \
   && touch -d "@$SOURCE_DATE_EPOCH" /tmp/source-date-epoch \
-  && mv -T /tmp/source-date-epoch .source-date-epoch
-
-ARG XTEXT_VERSION GRPC_VERSION OTEL_VERSION COMPRESS_VERSION CELGO_VERSION
-RUN set -eu \
-  && go mod edit \
-    -require=golang.org/x/text@$XTEXT_VERSION \
-    -require=google.golang.org/grpc@$GRPC_VERSION \
-    -require=go.opentelemetry.io/otel@$OTEL_VERSION \
-    -require=github.com/klauspost/compress@$COMPRESS_VERSION \
-    -require=github.com/google/cel-go@$CELGO_VERSION \
-  && go mod tidy \
-  && for want in \
-    "golang.org/x/text $XTEXT_VERSION" \
-    "google.golang.org/grpc $GRPC_VERSION" \
-    "go.opentelemetry.io/otel $OTEL_VERSION" \
-    "github.com/klauspost/compress $COMPRESS_VERSION" \
-    "github.com/google/cel-go $CELGO_VERSION"; \
-  do \
-    got=$(go list -m "${want% *}"); \
-    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
-  done \
-  && go mod download
+  && mv -T /tmp/source-date-epoch .source-date-epoch \
+  && git apply /run/patches/*.patch
+RUN go mod download
 
 ARG TARGETARCH GIT_REVISION
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
@@ -63,8 +33,8 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
   && LDFLAGS='-s -w' \
   && LDFLAGS="$LDFLAGS -X main.VERSION=v$VERSION" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
-  && `# https://github.com/projectcalico/calico/blob/v3.32.1/lib.Makefile#L229` \
-  && `# https://github.com/projectcalico/calico/blob/v3.32.1/lib.Makefile#L237-L238` \
+  && `# https://github.com/projectcalico/calico/blob/v3.32.2/lib.Makefile#L229` \
+  && `# https://github.com/projectcalico/calico/blob/v3.32.2/lib.Makefile#L237-L238` \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
   && go build \

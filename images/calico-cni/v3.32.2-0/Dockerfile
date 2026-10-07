@@ -1,72 +1,35 @@
-# https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Dockerfile
+# https://github.com/projectcalico/calico/blob/v3.32.2/cni-plugin/Dockerfile
 
 ARG \
-  VERSION=3.32.1 \
-  HASH=ee4699f5ffff98ff53de89bd5a36e8b647f671a6b4d707638990f1097f76e2cf \
-  # https://github.com/projectcalico/calico/blob/v3.32.1/metadata.mk#L59-L62
+  VERSION=3.32.2 \
+  HASH=4f5e90d613347a0024e6f2fea201ae2c576a0c9bba5296df1a10ce93de1f939e \
+  # https://github.com/projectcalico/calico/blob/v3.32.2/metadata.mk#L59-L62
   # Calico has FLANNEL_VERSION=main branch and CNI_VERSION=master.
-  # v3.32.1 was released 2026-06-24: https://github.com/projectcalico/calico/releases/tag/v3.32.1
+  # v3.32.2 was released 2026-08-30: https://github.com/projectcalico/calico/releases/tag/v3.32.2
   #
-  # https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Makefile#L175
-  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2026-06-24
+  # https://github.com/projectcalico/calico/blob/v3.32.2/cni-plugin/Makefile#L178
+  # https://github.com/projectcalico/flannel-cni-plugin/commits/main/?since=2024-09-12&until=2026-08-30
   FLANNEL_VERSION=5a977558e9fbbf93ff7ba927847fbca194e02416 \
   #
-  # https://github.com/projectcalico/calico/blob/v3.32.1/cni-plugin/Makefile#L155
-  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2026-06-24
+  # https://github.com/projectcalico/calico/blob/v3.32.2/cni-plugin/Makefile#L157-L158
+  # https://github.com/projectcalico/containernetworking-plugins/commits/master/?since=2025-01-27&until=2026-08-30
   CNI_PLUGINS_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
   CNI_PLUGINS_HASH=97162c06333ba91c1d4ab8085ed4be09a81a45216c594eb3011332c953a501ba
 
-# Dependency override for CVE-2026-39824 (x/sys), still open in the
-# containernetworking-plugins fork pinned above. Vendored, so the bump
-# needs `go mod vendor`, not just `go mod download`. Drop again once
-# upstream picks the version up.
-ARG XSYS_VERSION=v0.44.0
-
-# Dependency overrides for advisories still open in calico v3.32.1:
-# GO-2026-5970 (x/text), GO-2026-6061 (grpc), GO-2026-5158 (otel),
-# GO-2026-5841 (klauspost/compress) and GHSA-gcjh-h69q-9w9g (cel-go).
-# Raising them requires `go mod tidy`, which also nudges a handful of
-# unrelated transitive dependencies, so drop each override again once
-# upstream picks the version up. The flannel-cni-plugin stage builds a
-# separate module that carries none of these advisories.
-ARG \
-  XTEXT_VERSION=v0.39.0 \
-  GRPC_VERSION=v1.82.1 \
-  OTEL_VERSION=v1.44.0 \
-  COMPRESS_VERSION=v1.18.7 \
-  CELGO_VERSION=v0.29.0
-
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.6-alpine3.23 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.1-alpine3.24 AS build-base
+RUN apk add --no-cache git
 
 
 FROM build-base AS builder
 ARG VERSION HASH
 WORKDIR /go/src/calico
-RUN --mount=type=tmpfs,target=/tmp \
+RUN --mount=from=patches,target=/run/patches,ro \
+  --mount=type=tmpfs,target=/tmp \
   wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
-  && tar xf /tmp/sources.tar.gz --strip-components=1
-
-ARG XTEXT_VERSION GRPC_VERSION OTEL_VERSION COMPRESS_VERSION CELGO_VERSION
-RUN set -eu \
-  && go mod edit \
-    -require=golang.org/x/text@$XTEXT_VERSION \
-    -require=google.golang.org/grpc@$GRPC_VERSION \
-    -require=go.opentelemetry.io/otel@$OTEL_VERSION \
-    -require=github.com/klauspost/compress@$COMPRESS_VERSION \
-    -require=github.com/google/cel-go@$CELGO_VERSION \
-  && go mod tidy \
-  && for want in \
-    "golang.org/x/text $XTEXT_VERSION" \
-    "google.golang.org/grpc $GRPC_VERSION" \
-    "go.opentelemetry.io/otel $OTEL_VERSION" \
-    "github.com/klauspost/compress $COMPRESS_VERSION" \
-    "github.com/google/cel-go $CELGO_VERSION"; \
-  do \
-    got=$(go list -m "${want% *}"); \
-    [ "$got" = "$want" ] || { echo "dependency override lost: got '$got', want '$want'"; exit 1; }; \
-  done \
-  && go mod download
+  && tar xf /tmp/sources.tar.gz --strip-components=1 \
+  && git apply /run/patches/*.patch
+RUN go mod download
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
@@ -85,7 +48,7 @@ RUN set -e \
 
 
 FROM build-base AS flannel-cni-plugin
-RUN apk add --no-cache git bash
+RUN apk add --no-cache bash
 
 ARG FLANNEL_VERSION
 WORKDIR /go/src/flannel-cni-plugin
@@ -103,18 +66,14 @@ RUN apk add --no-cache make bash
 
 ARG CNI_PLUGINS_VERSION CNI_PLUGINS_HASH
 WORKDIR /go/src/cni-plugins
-RUN --mount=type=tmpfs,target=/tmp \
+RUN --mount=source=patches/cni-plugins,target=/run/patches,ro \
+  --mount=type=tmpfs,target=/tmp \
   wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/containernetworking-plugins/archive/$CNI_PLUGINS_VERSION.tar.gz \
   && { echo $CNI_PLUGINS_HASH /tmp/sources.tar.gz | sha256sum -c -; } \
-  && tar xf /tmp/sources.tar.gz --strip-components=1
-
-ARG XSYS_VERSION
-RUN set -eu \
-  && go get golang.org/x/sys@$XSYS_VERSION \
-  && go mod tidy \
-  && go mod vendor \
-  && got=$(go list -m golang.org/x/sys) \
-  && [ "$got" = "golang.org/x/sys $XSYS_VERSION" ] || { echo "dependency override lost: got '$got', want 'golang.org/x/sys $XSYS_VERSION'"; exit 1; }
+  && tar xf /tmp/sources.tar.gz --strip-components=1 \
+  && git apply /run/patches/*.patch
+# The fork vendors its dependencies, so re-vendor after patching go.mod.
+RUN go mod vendor
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-build \
