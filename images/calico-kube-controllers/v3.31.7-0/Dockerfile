@@ -1,15 +1,17 @@
-# https://github.com/projectcalico/calico/blob/v3.31.5/kube-controllers/Dockerfile
+# https://github.com/projectcalico/calico/blob/v3.31.7/kube-controllers/Dockerfile
 
 ARG \
-  VERSION=3.31.5 \
-  HASH=8940c0e3afdadaac6b074d313b4576c0239dd015aa2ed5ffa2353ce4bf803d35 \
-  GIT_REVISION=2e4da40144aac869e1ed2cc220b6c4b62f32efdd
+  VERSION=3.31.7 \
+  HASH=bd485c80f8bfec1428f3d8a94dae6e52d4c44412f95aaf8d140433fa1f6850a7 \
+  GIT_REVISION=94bd1d5b0e04459d4d1c83653e0335a9201248b8
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.2-alpine3.23 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.1-alpine3.24 AS builder
+RUN apk add --no-cache git
 
 ARG VERSION HASH
 WORKDIR /go/src/calico
-RUN --mount=type=tmpfs,target=/tmp \
+RUN --mount=from=patches,target=/run/patches,ro \
+  --mount=type=tmpfs,target=/tmp \
   set -euo pipefail \
   && wget -qO /tmp/sources.tar.gz https://github.com/projectcalico/calico/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/sources.tar.gz | sha256sum -c -; } \
@@ -17,7 +19,8 @@ RUN --mount=type=tmpfs,target=/tmp \
   && find . -type f -exec stat -c '%Y' {} \; | sort -n -u | tail -1 >/tmp/source-date-epoch \
   && read -r SOURCE_DATE_EPOCH </tmp/source-date-epoch \
   && touch -d "@$SOURCE_DATE_EPOCH" /tmp/source-date-epoch \
-  && mv -T /tmp/source-date-epoch .source-date-epoch
+  && mv -T /tmp/source-date-epoch .source-date-epoch \
+  && git apply /run/patches/*.patch
 RUN go mod download
 
 ARG TARGETARCH GIT_REVISION
@@ -30,7 +33,7 @@ RUN --mount=type=cache,id=calico-gocache-$TARGETARCH,target=/root/.cache/go-buil
   && LDFLAGS='-s -w' \
   && LDFLAGS="$LDFLAGS -X main.VERSION=v$VERSION" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.Version=v$VERSION" \
-  && `# https://github.com/projectcalico/calico/blob/v3.31.5/lib.Makefile#L224` \
+  && `# https://github.com/projectcalico/calico/blob/v3.31.7/lib.Makefile#L224` \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.BuildDate=$(date -u -d @$SOURCE_DATE_EPOCH +'%FT%T%z')" \
   && LDFLAGS="$LDFLAGS -X github.com/projectcalico/calico/pkg/buildinfo.GitRevision=$GIT_REVISION" \
   && go build \
