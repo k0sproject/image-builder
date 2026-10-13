@@ -1,7 +1,8 @@
 ARG \
-    # v2.337.0
-    RUNNER_REVISION=397b032cbf865e9c3ddfab89d533ec19325e1273 \
-    RUNNER_CONTAINER_HOOKS_VERSION=0.2.0 \
+    # v2.338.0
+    RUNNER_REVISION=197ca027b90de199464dee3bb9ff198a1db60967 \
+    RUNNER_CONTAINER_HOOKS_VERSION=0.8.1 \
+    RUNNER_CONTAINER_HOOKS_HASH=2c3c4526f8a8d517373a2a0daa6122d7887bdc465c54945c6d716db87d9d9b4f \
     DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0.425-alpine3.24@sha256:3111b113abec80b4a8a3d4b5cebebf61a4cdab019b7e56ca3e6389e6ac4e1c8d \
     ALPINE_IMAGE=docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
@@ -26,7 +27,7 @@ RUN --mount=type=bind,source=build-runner.sh,target=/run/build-runner.sh \
 
 FROM $ALPINE_IMAGE
 
-ARG TARGETPLATFORM RUNNER_CONTAINER_HOOKS_VERSION
+ARG TARGETPLATFORM RUNNER_CONTAINER_HOOKS_VERSION RUNNER_CONTAINER_HOOKS_HASH
 # Docker and Docker Compose arguments
 ARG CHANNEL=stable
 ARG DOCKER_VERSION=20.10.21
@@ -113,6 +114,7 @@ RUN mkdir /opt/hostedtoolcache \
 
 RUN cd "$RUNNER_ASSETS_DIR" \
     && curl -fLo runner-container-hooks.zip https://github.com/actions/runner-container-hooks/releases/download/v${RUNNER_CONTAINER_HOOKS_VERSION}/actions-runner-hooks-k8s-${RUNNER_CONTAINER_HOOKS_VERSION}.zip \
+    && { echo $RUNNER_CONTAINER_HOOKS_HASH runner-container-hooks.zip | sha256sum -c -; } \
     && unzip ./runner-container-hooks.zip -d ./k8s \
     && rm -f runner-container-hooks.zip
 
