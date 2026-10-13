@@ -160,14 +160,15 @@ jobs:
           FOLDER: ${{ matrix.folder }}
         run: |
           set -euo pipefail
-          if [ -d images/"$FOLDER"/build-contexts ]; then
-            for ctx in images/"$FOLDER"/build-contexts/*; do
-              printf '%s=%s\n' "${ctx##*/}" "$ctx"
-            done
-          fi \
-            | jq --slurp --raw-input --raw-output \
-              'rtrimstr("\n") | split("\n") | "list=\(tojson)"' \
-            | tee -- "$GITHUB_OUTPUT"
+          {
+            echo 'list<<EOF'
+            if [ -d images/"$FOLDER"/build-contexts ]; then
+              for ctx in images/"$FOLDER"/build-contexts/*; do
+                printf '%s=%s\n' "${ctx##*/}" "$ctx"
+              done
+            fi
+            echo EOF
+          } | tee -- "$GITHUB_OUTPUT"
 
       - name: Build - Multi-platform
         id: build
@@ -175,7 +176,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
-          build-contexts: ${{ join(fromJSON(steps.build-contexts.outputs.list), '\n') }}
+          build-contexts: ${{ steps.build-contexts.outputs.list }}
           platforms: ${{ steps.image.outputs.platforms }}
           outputs: type=oci,dest=image.tar,rewrite-timestamp=true
 
@@ -185,7 +186,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
-          build-contexts: ${{ join(fromJSON(steps.build-contexts.outputs.list), '\n') }}
+          build-contexts: ${{ steps.build-contexts.outputs.list }}
           platforms: windows/amd64
           build-args: WINDOWS_VERSION=2019
           outputs: type=oci,dest=windows-2019.tar,rewrite-timestamp=true
@@ -196,7 +197,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
-          build-contexts: ${{ join(fromJSON(steps.build-contexts.outputs.list), '\n') }}
+          build-contexts: ${{ steps.build-contexts.outputs.list }}
           platforms: windows/amd64
           build-args: WINDOWS_VERSION=2022
           outputs: type=oci,dest=windows-2022.tar,rewrite-timestamp=true
@@ -207,7 +208,7 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: ${{ format('images/{0}', matrix.folder) }}
-          build-contexts: ${{ join(fromJSON(steps.build-contexts.outputs.list), '\n') }}
+          build-contexts: ${{ steps.build-contexts.outputs.list }}
           platforms: windows/amd64
           build-args: WINDOWS_VERSION=2025
           outputs: type=oci,dest=windows-2025.tar,rewrite-timestamp=true
