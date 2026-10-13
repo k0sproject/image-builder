@@ -11,7 +11,10 @@ ARG \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
   ALPINE_IMAGE=docker.io/library/alpine:3.24.2 \
   BUILDER_IMAGE=docker.io/library/golang:1.27.1-alpine3.24 \
-  IPTABLES_VERSION=1.8.11
+  IPTABLES_VERSION=1.8.11 \
+  # https://github.com/projectcalico/calico/blob/v3.31.7/metadata.mk#L75-L76
+  NFTABLES_VERSION=1.1.1 \
+  NFTABLES_HASH=6358830f3a64f31e39b0ad421d7dadcd240b72343ded48d8ef13b8faf204865a
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder
 RUN apk add --no-cache git
@@ -122,6 +125,47 @@ RUN strip /usr/local/sbin/xtables-legacy-multi
 RUN strip /usr/local/sbin/xtables-nft-multi
 RUN scanelf -Rn /usr/local && file /usr/local/sbin/*
 
+
+# Build nftables
+FROM --platform=$BUILDPLATFORM $ALPINE_IMAGE AS nftables-sources
+RUN apk add --no-cache git
+
+ARG NFTABLES_VERSION NFTABLES_HASH
+WORKDIR /nftables
+RUN --mount=from=nftables-patches,target=/run/patches,ro \
+  --mount=type=tmpfs,target=/tmp \
+  set -euo pipefail \
+  && wget -qO /tmp/sources.tar.xz https://www.netfilter.org/projects/nftables/files/nftables-$NFTABLES_VERSION.tar.xz \
+  && { echo $NFTABLES_HASH /tmp/sources.tar.xz | sha256sum -c -; } \
+  && tar xf /tmp/sources.tar.xz --strip-components=1 \
+  && git apply /run/patches/*.patch
+
+
+FROM $ALPINE_IMAGE AS nftables
+RUN apk add --no-cache build-base pkgconf file \
+	linux-headers \
+	gmp-dev gmp-static \
+	jansson-dev jansson-static \
+	libmnl-dev libmnl-static \
+	libnftnl-dev
+
+# Same configure flags as Calico's RPM build: JSON output is required by
+# knftables, the interactive CLI isn't used.
+# https://github.com/projectcalico/calico/blob/v3.31.7/hack/rpms/nftables/nftables.spec#L45
+RUN --mount=from=nftables-sources,source=/nftables,target=/run/stage/nftables,ro \
+  --mount=type=tmpfs,target=/nftables \
+  --network=none \
+  set -euo pipefail \
+  && cp -a /run/stage/nftables / \
+  && cd /nftables \
+  # https://github.com/projectcalico/calico/blob/v3.31.7/hack/rpms/nftables/nftables.spec#L45
+  && ./configure --disable-man-doc --with-json --without-cli --enable-static --disable-shared \
+  && make -j$(nproc) LDFLAGS=-all-static \
+  && strip src/nft \
+  && file src/nft | tee /dev/stderr | grep -q 'static-pie linked' \
+  && mkdir /dist \
+  && mv src/nft /dist/
+
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS iptables-wrapper
 RUN apk add --no-cache patch make
 
@@ -180,6 +224,8 @@ COPY --from=iptables \
 RUN --mount=from=iptables-wrapper,source=/go/src/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
   cp -a /run/stage/iptables-wrapper/iptables-wrapper-installer.sh /run/stage/iptables-wrapper/iptables-wrapper / \
   && /iptables-wrapper-installer.sh
+
+COPY --from=nftables /dist/nft /usr/sbin/nft
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
