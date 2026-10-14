@@ -1,7 +1,8 @@
 ARG \
-    # v2.337.0
-    RUNNER_REVISION=397b032cbf865e9c3ddfab89d533ec19325e1273 \
-    RUNNER_CONTAINER_HOOKS_VERSION=0.2.0 \
+    # v2.338.0
+    RUNNER_REVISION=197ca027b90de199464dee3bb9ff198a1db60967 \
+    RUNNER_CONTAINER_HOOKS_VERSION=0.8.1 \
+    RUNNER_CONTAINER_HOOKS_HASH=2c3c4526f8a8d517373a2a0daa6122d7887bdc465c54945c6d716db87d9d9b4f \
     DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0.425-alpine3.24@sha256:3111b113abec80b4a8a3d4b5cebebf61a4cdab019b7e56ca3e6389e6ac4e1c8d \
     ALPINE_IMAGE=docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
@@ -26,11 +27,7 @@ RUN --mount=type=bind,source=build-runner.sh,target=/run/build-runner.sh \
 
 FROM $ALPINE_IMAGE
 
-ARG TARGETPLATFORM RUNNER_CONTAINER_HOOKS_VERSION
-# Docker and Docker Compose arguments
-ARG CHANNEL=stable
-ARG DOCKER_VERSION=20.10.21
-ARG DOCKER_COMPOSE_VERSION=v2.16.0
+ARG RUNNER_CONTAINER_HOOKS_VERSION RUNNER_CONTAINER_HOOKS_HASH
 ARG RUNNER_USER_UID=1001
 ARG DOCKER_GROUP_GID=121
 
@@ -53,6 +50,9 @@ RUN apk add --no-interactive --no-cache \
         coreutils \
         curl \
         diffutils \
+        docker-cli \
+        docker-cli-buildx \
+        docker-cli-compose \
         findutils \
         git \
         git-lfs \
@@ -113,26 +113,9 @@ RUN mkdir /opt/hostedtoolcache \
 
 RUN cd "$RUNNER_ASSETS_DIR" \
     && curl -fLo runner-container-hooks.zip https://github.com/actions/runner-container-hooks/releases/download/v${RUNNER_CONTAINER_HOOKS_VERSION}/actions-runner-hooks-k8s-${RUNNER_CONTAINER_HOOKS_VERSION}.zip \
+    && { echo $RUNNER_CONTAINER_HOOKS_HASH runner-container-hooks.zip | sha256sum -c -; } \
     && unzip ./runner-container-hooks.zip -d ./k8s \
     && rm -f runner-container-hooks.zip
-
-RUN set -vx; \
-    export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
-    && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
-    && if [ "$ARCH" = "arm" ]; then export ARCH=armhf ; fi \
-    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ] || [ "$ARCH" = "" ]; then export ARCH=x86_64 ; fi \
-    && if [ "$ARCH" = "" ]; then export ARCH=arm64 ; fi \
-    && curl -fLo docker.tgz https://download.docker.com/linux/static/${CHANNEL}/${ARCH}/docker-${DOCKER_VERSION}.tgz \
-    && tar zxvf docker.tgz \
-    && install -o root -g root -m 755 docker/docker /usr/bin/docker \
-    && rm -rf docker docker.tgz
-
-RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
-    && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
-    && if [ "$ARCH" = "arm" ]; then export ARCH=armv7 ; fi \
-    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ] || [ "$ARCH" = "" ]; then export ARCH=x86_64 ; fi \
-    && curl -fLo /usr/bin/docker-compose https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-${ARCH} \
-    && chmod +x /usr/bin/docker-compose
 
 # We place the scripts in `/usr/bin` so that users who extend this image can
 # override them with scripts of the same name placed in `/usr/local/bin`.
