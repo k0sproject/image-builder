@@ -5,7 +5,7 @@ ARG \
   HASH=4f5e90d613347a0024e6f2fea201ae2c576a0c9bba5296df1a10ce93de1f939e \
   GIT_REVISION=db255c554b929afd73552fd3ac81d691107a1607
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.1-alpine3.24 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.27.3-alpine3.24 AS builder
 RUN apk add --no-cache git
 
 ARG VERSION HASH
