@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.8-alpine3.24
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.37.md#source-code
 ARG VERSION=1.37.1
