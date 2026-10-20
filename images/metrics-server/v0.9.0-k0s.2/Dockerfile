@@ -1,7 +1,7 @@
 ARG \
   VERSION=v0.9.0+k0s.0 \
   REVISION=2a7c4b2c7d46552ff47f4aeaa3a735c582587ecd \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca \
   DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d5f030ca7c5793784e9ea4178a116da360250411d13921a5af27c6cb5a5949bf
 
 # Dependency overrides for advisories still open upstream:
