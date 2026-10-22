@@ -5,7 +5,7 @@ ARG \
   VERSION=0.37.0 \
   HASH=d2e201f93ef1efbef60c041bd9152fa7d78394a4cb278c941bb89ecca9e67e7e \
   BUILDIMAGE=docker.io/library/golang:1.27.3-alpine3.24 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d62067879de890a1def9da0e7766b7d20810a5e5555cef8506b752437d7a3e88 \
   WINDOWS_VERSION=
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources

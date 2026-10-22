@@ -1,8 +1,8 @@
 ARG \
   VERSION=v0.9.0+k0s.0 \
   REVISION=2a7c4b2c7d46552ff47f4aeaa3a735c582587ecd \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24@sha256:9ce231b28998b32e116927c61aa5c406183061d4f3f2d61b292c88e7f6bdf7ca \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d5f030ca7c5793784e9ea4178a116da360250411d13921a5af27c6cb5a5949bf
+  BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24@sha256:5cb67f19c5e7994dcb80c074f7cfca8aeeada45bbdca035f73df269cefdcce61 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d62067879de890a1def9da0e7766b7d20810a5e5555cef8506b752437d7a3e88
 
 # Dependency overrides for advisories still open upstream:
 # GHSA-gcjh-h69q-9w9g (cel-go), CVE-2026-56852 (x/text) and
