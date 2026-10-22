@@ -4,7 +4,7 @@ ARG \
   VERSION=3.29.7 \
   HASH=d60fd083ad0279a4bd20109d01689e4eecb7a5e8c6d5e8be2b1718e6057f85e9
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.6-alpine3.23 AS builder
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.10-alpine3.23 AS builder
 
 ARG VERSION HASH
 WORKDIR /go/src/calico

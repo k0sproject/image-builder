@@ -8,8 +8,8 @@ ARG \
   # https://github.com/projectcalico/calico/blob/v3.29.7/metadata.mk#L36
   BIRD_COMMIT=9111ec3c3ff3e769727a5940d3d829a0be8b5201 \
   BIRD_HASH=5aaf11e2f0ba3c44cdf27746c0b5da631befd67636579ff5e2ac65b144bee0b3 \
-  ALPINE_IMAGE=docker.io/library/alpine:3.23.3 \
-  BUILDER_IMAGE=docker.io/library/golang:1.25.6-alpine3.23 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.23.7 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.23 \
   IPTABLES_VERSION=1.8.11
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS builder

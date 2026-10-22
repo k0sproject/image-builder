@@ -2,8 +2,8 @@ ARG \
   KUBE_ROUTER_VERSION=v2.10.0 \
   # https://github.com/cloudnativelabs/kube-router/blob/v2.10.0/Makefile#L40 (v4.5.0)
   GOBGP_REVISION=5f191066a78e2c1e929c54b5b75fe2c683c166e4 \
-  ALPINE_IMAGE=docker.io/library/alpine:3.24.1 \
-  BUILDER_IMAGE=docker.io/library/golang:1.26.6-alpine3.24 \
+  ALPINE_IMAGE=docker.io/library/alpine:3.24.3 \
+  BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24 \
   IPTABLES_VERSION=1.8.13 \
   IPTABLES_HASH=1afcd33da9e8f913ace6a2126788162e207e26f5d5e29c6573c0e581ffc58b99 \
   IPTABLES_WRAPPER_VERSION=06cad2ec6cb5ed0945b383fb185424c0a67f55eb \

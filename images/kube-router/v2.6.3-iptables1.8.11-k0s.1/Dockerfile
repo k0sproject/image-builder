@@ -1,6 +1,6 @@
 ARG KUBE_ROUTER_VERSION=v2.6.3
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.5-alpine3.22 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.10-alpine3.23 AS build-base
 RUN apk add --no-interactive --no-cache git make curl
 ENV GOTOOLCHAIN=local
 
@@ -54,15 +54,13 @@ RUN --mount=type=tmpfs,target=/go/iptables-wrapper/bin \
   && GOARCH="$TARGETARCH" make -C /go/iptables-wrapper build \
   && mv /go/iptables-wrapper/bin/iptables-wrapper /go/iptables-wrapper
 
-FROM docker.io/library/alpine:3.21.3
+FROM docker.io/library/alpine:3.23.7
 LABEL org.opencontainers.image.licenses="Apache-2.0" \
       org.opencontainers.image.source="https://github.com/cloudnativelabs/kube-router"
 RUN --mount=from=build-iptables-wrapper,source=/go/iptables-wrapper,target=/run/stage/iptables-wrapper,ro \
   apk add --no-cache \
     'iptables=~1.8.11' \
     'ip6tables=~1.8.11' \
-    'libcrypto3=~3.3.3-r0' \
-    'libssl3=~3.3.3-r0' \
     ipset \
     iproute2 \
     ipvsadm \

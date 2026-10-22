@@ -16,7 +16,7 @@ ARG \
   CNI_PLUGINS_VERSION=9ffe547cb3b66f80dd32a00fc69a6d0082b55321 \
   CNI_PLUGINS_HASH=97162c06333ba91c1d4ab8085ed4be09a81a45216c594eb3011332c953a501ba
 
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.25.6-alpine3.23 AS build-base
+FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.10-alpine3.23 AS build-base
 
 
 FROM build-base AS builder
