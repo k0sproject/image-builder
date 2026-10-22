@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.25.5-alpine3.22
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.23
 
 ARG \
   VERSION=1.13.2 \
