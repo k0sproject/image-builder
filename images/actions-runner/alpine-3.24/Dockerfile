@@ -3,8 +3,8 @@ ARG \
     RUNNER_REVISION=197ca027b90de199464dee3bb9ff198a1db60967 \
     RUNNER_CONTAINER_HOOKS_VERSION=0.8.1 \
     RUNNER_CONTAINER_HOOKS_HASH=2c3c4526f8a8d517373a2a0daa6122d7887bdc465c54945c6d716db87d9d9b4f \
-    DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0.425-alpine3.24@sha256:3111b113abec80b4a8a3d4b5cebebf61a4cdab019b7e56ca3e6389e6ac4e1c8d \
-    ALPINE_IMAGE=docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+    DOTNET_SDK_IMAGE=mcr.microsoft.com/dotnet/sdk:8.0.426-alpine3.24@sha256:f3a40dfef13e032a0a9503489470fc7f8bf1740bf72f1bc6c0c86d6876f86c6e \
+    ALPINE_IMAGE=docker.io/library/alpine:3.24.3@sha256:b3413572228e34bd1c9245f5565e6cd127005655e8a7899aef33d8e83255c9e6
 
 FROM --platform=$BUILDPLATFORM $DOTNET_SDK_IMAGE AS build-runner
 # Upstream's dev.sh is a bash script.
