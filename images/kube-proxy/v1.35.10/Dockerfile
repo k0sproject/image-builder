@@ -1,4 +1,4 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.8-alpine3.24@sha256:8ac98ca534ac3f51e1f420a1dd2c15e74c75cfa0f23f3ad27eb5d7236c349a0c
+ARG BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
 
@@ -7,8 +7,8 @@ RUN apk add --no-interactive --no-cache patch make bash rsync
 FROM build-base AS kube-proxy
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.35.md#source-code
-ARG K8S_VERSION=1.35.9
-ARG K8S_HASH=2d1efa87ff831aaea71df430f8a1c81631d1f3d027e30ea308f712775c3035396daf7d357f7299329d6f3d2f8514b58a1d73dbda92520b2987415c66baa6e38f
+ARG K8S_VERSION=1.35.10
+ARG K8S_HASH=21206f71aa990caced61df7b5851a04c302e72ec61768ac95dd694e37ec8517f59abefe0fa782bf5bf4398014a777c1524524c291e5a97f55b834cc5af034bf9
 
 # Kubernetes 1.35 still ships old dependencies which are flagged for CVEs.
 # The bumps only landed upstream in the 1.37 line, so pull it in here and
