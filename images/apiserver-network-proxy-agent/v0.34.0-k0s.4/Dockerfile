@@ -4,8 +4,8 @@
 ARG \
   VERSION=0.34.0 \
   HASH=f338b1db93558121252eec01113a9adcf542d2c23d6c63a092cf9d2ae95317ac \
-  BUILDIMAGE=docker.io/library/golang:1.26.10-alpine3.23 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d62067879de890a1def9da0e7766b7d20810a5e5555cef8506b752437d7a3e88 \
+  BUILDIMAGE=docker.io/library/golang:1.26.11-alpine3.24 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5 \
   WINDOWS_VERSION=
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources
@@ -14,11 +14,14 @@ WORKDIR /go/src/kubernetes-sigs/apiserver-network-proxy
 
 ARG VERSION HASH
 RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
+  --mount=source=patches,target=/run/patches,ro \
   --mount=type=tmpfs,target=/tmp \
   set -e \
+  && apk add --no-cache patch \
   && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/src.tar.gz | sha256sum -c -; } || { sha256sum /tmp/src.tar.gz; exit 1; } \
-  && tar xf /tmp/src.tar.gz --strip-components=1
+  && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && for p in /run/patches/*.patch; do patch -p1 <"$p"; done
 RUN go mod download
 
 

@@ -4,8 +4,8 @@
 ARG \
   VERSION=0.36.0 \
   HASH=28e7766158efd496cef5d75155b38a8883a59aff8282bef65a5a7e5e6e6f8481 \
-  BUILDIMAGE=docker.io/library/golang:1.26.10-alpine3.23 \
-  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:d62067879de890a1def9da0e7766b7d20810a5e5555cef8506b752437d7a3e88 \
+  BUILDIMAGE=docker.io/library/golang:1.26.11-alpine3.24 \
+  DISTROLESS_BASEIMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5 \
   WINDOWS_VERSION=
 
 FROM --platform=$BUILDPLATFORM $BUILDIMAGE AS sources
@@ -14,33 +14,14 @@ WORKDIR /go/src/kubernetes-sigs/apiserver-network-proxy
 
 ARG VERSION HASH
 RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
+  --mount=source=patches,target=/run/patches,ro \
   --mount=type=tmpfs,target=/tmp \
   set -e \
+  && apk add --no-cache patch \
   && wget -qO /tmp/src.tar.gz https://github.com/kubernetes-sigs/apiserver-network-proxy/archive/refs/tags/v$VERSION.tar.gz \
   && { echo $HASH /tmp/src.tar.gz | sha256sum -c -; } || { sha256sum /tmp/src.tar.gz; exit 1; } \
-  && tar xf /tmp/src.tar.gz --strip-components=1
-ARG XNET_VERSION=v0.56.0 XTEXT_VERSION=v0.39.0 GRPC_VERSION=v1.82.1
-RUN --mount=type=cache,id=konnectivity-go-modcache,target=/go/pkg/mod \
-  set -eu \
-  && for spec in \
-    "golang.org/x/net $XNET_VERSION" \
-    "golang.org/x/text $XTEXT_VERSION" \
-    "google.golang.org/grpc $GRPC_VERSION" \
-  ; do \
-    pkg=$(echo "$spec" | cut -d' ' -f1); \
-    want=$(echo "$spec" | cut -d' ' -f2); \
-    have=$(go list -m -f '{{.Version}}' "$pkg"); \
-    newer=$(printf '%s\n%s\n' "${have#v}" "${want#v}" | sort -t. -k1,1n -k2,2n -k3,3n | tail -n1); \
-    if [ "$newer" = "${have#v}" ] && [ "$have" != "$want" ]; then \
-      echo "ERROR: $pkg is already $have (>= $want) -- remove this pin from the Dockerfile" >&2; \
-      exit 1; \
-    fi; \
-  done \
-  && go get \
-  golang.org/x/net@$XNET_VERSION \
-  golang.org/x/text@$XTEXT_VERSION \
-  google.golang.org/grpc@$GRPC_VERSION \
-  && go mod tidy
+  && tar xf /tmp/src.tar.gz --strip-components=1 \
+  && for p in /run/patches/*.patch; do patch -p1 <"$p"; done
 RUN go mod download
 
 
