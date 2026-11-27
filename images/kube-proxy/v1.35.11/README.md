@@ -6,6 +6,11 @@ uses the new binary `iptables-wrapper`, so that it doesn't need a shell anymore.
 
 Notes:
 
+* This image overrides the vendored versions including their transitive
+  dependencies of
+  * `golang.org/x/crypto`,
+  * `github.com/google/cel-go` and
+  * `google.golang.org/grpc`.
 * Alpine's `kmod` package depends on `/bin/sh` for its trigger scripts run at
   package installation. Hence `apk` refuses to purge `busybox`. Have a little
   nasty hack in place that fiddles with Alpine's package database to remove that
