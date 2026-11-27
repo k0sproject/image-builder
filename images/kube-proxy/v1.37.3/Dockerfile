@@ -1,11 +1,11 @@
-ARG BUILDER_IMAGE=docker.io/library/golang:1.26.10-alpine3.24@sha256:a2012b4a1d1f9f7e9f44e0d39b805a901e856b1dd80b4e6ee4338db547050308
+ARG BUILDER_IMAGE=docker.io/library/golang:1.27.4-alpine3.24@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280
 
 # https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.37.md#source-code
-ARG VERSION=1.37.2
-ARG HASH=2c5e991be1dcf78db1db099b8b52e6750d251045d4662f2cacf28d415f17a41a536ad3a88e35cde6a109f09c120c6a0b05f6b61b88202656a6671ed4c442db44
+ARG VERSION=1.37.3
+ARG HASH=6675e487bdc83a4a898ddfbb78a44994c420bf0f8dd3ccc6bdd8b20c17d83d6599aa10a2c848f376b1fec13e759268080c21d7273eaf786f943fc3e5b01c16f9
 
-ARG IPTABLES_WRAPPER_VERSION=bfef9e5087a198b50a4124bb9ce9d2c7c99025dd
-ARG IPTABLES_WRAPPER_HASH=cefaaa2325236de34f0bc55b526aa9b4f319ba90cf136001d646c7bab6d51a32
+ARG IPTABLES_WRAPPER_VERSION=2deed57c5147181fb072cbe684121438cd1b4b8e
+ARG IPTABLES_WRAPPER_HASH=151eb85bd67c622560c2183da3d5f39cd37808037c7fefd8ad135de9b05d3dd0
 
 
 FROM --platform=$BUILDPLATFORM $BUILDER_IMAGE AS build-base
@@ -47,7 +47,7 @@ RUN --mount=source=files,target=/run/stage/files,ro \
   && wget -qO /tmp/sources.tar.gz https://github.com/kubernetes-sigs/iptables-wrappers/archive/$IPTABLES_WRAPPER_VERSION.tar.gz \
   && { echo $IPTABLES_WRAPPER_HASH /tmp/sources.tar.gz | sha256sum -c -; } || { sha256sum /tmp/sources.tar.gz; exit 1; } \
   && tar xf /tmp/sources.tar.gz --strip-components=1 \
-  && patch </run/stage/files/iptables-wrapper.patch
+  && patch -p0 </run/stage/files/iptables-wrapper.patch
 
 ARG TARGETARCH
 RUN --mount=type=cache,id=kube-proxy-go-cache-$TARGETARCH,target=/root/.cache/go-build \
