@@ -1,0 +1,32 @@
+--- Makefile
++++ Makefile
+@@ -7,7 +7,7 @@
+ 	mkdir -p $(BIN_DIR)
+ 
+ build: $(BIN_DIR)
+-	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -extldflags="-static" -buildid=""' -trimpath -o $(BIN_DIR)/iptables-wrapper sigs.k8s.io/iptables-wrappers/cmd/iptables-wrapper
++	CGO_ENABLED=0 $(GO) build -ldflags='-s -w -extldflags="-static" -buildid=""' -trimpath -buildvcs=false -o $(BIN_DIR)/iptables-wrapper sigs.k8s.io/iptables-wrappers/cmd/iptables-wrapper
+ 
+ clean:
+ 	rm -f $(BIN_DIR)/iptables-wrapper
+--- cmd/iptables-wrapper/main.go
++++ cmd/iptables-wrapper/main.go
+@@ -124,8 +124,17 @@
+ func install(ctx context.Context, alternatives alternativesSelector) {
+ 	wrapperPath, err := os.Executable()
+ 	if err != nil {
+-		fatal(err)
++		fmt.Fprintf(os.Stderr, "Warning: falling back to command line: %s\n", err)
++		if wrapperPath, err = filepath.Abs(os.Args[0]); err != nil {
++			fatal(err)
++		}
++		if stat, err := os.Stat(wrapperPath); err != nil {
++			fatal(err)
++		} else if !stat.Mode().IsRegular() {
++			fatal(errors.New("not a regular file: " + wrapperPath))
++		}
+ 	}
++
+ 	wrapperPath = filepath.Clean(wrapperPath)
+ 	if err := alternatives.Install(ctx, wrapperPath); err != nil {
+ 		fatal(err)
